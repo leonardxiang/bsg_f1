@@ -88,20 +88,6 @@ include $(CL_DIR)/hdk.mk
 # of identical rules -- which causes errors.
 include $(TESTBENCH_PATH)/simlibs.mk
 
-# -------------------- Arguments --------------------
-# This Makefile has several optional "arguments" that are passed as Variables
-#
-# DEBUG: Opens the GUI during cosimulation. Default: 0
-# TURBO: Disables VPD generation. Default: 0
-# EXTRA_TURBO: Disables VPD Generation, and more optimization flags: Default 0
-# 
-# If you need additional speed, you can set EXTRA_TURBO=1 during compilation. 
-# This is a COMPILATION ONLY option. Any subsequent runs, without compilation
-# will retain this setting
-DEBUG            ?= 0
-TURBO            ?= 0
-EXTRA_TURBO      ?= 0
-
 # -------------------- VARIABLES --------------------
 # We parallelize VCS compilation, but we leave a few cores on the table.
 NPROCS = $(shell echo "(`nproc`/4 + 1)" | bc)
@@ -134,48 +120,39 @@ VCS_CXXFLAGS   += $(foreach def,$(CXXFLAGS),-CFLAGS "$(def)")
 VCS_CXXDEFINES += $(foreach def,$(CXXDEFINES),-CFLAGS "$(def)")
 VCS_LDFLAGS    += $(foreach def,$(LDFLAGS),-LDFLAGS "$(def)")
 VCS_VFLAGS     += -M +lint=TFIPC-L -ntb_opts tb_timescale=1ps/1ps -lca -v2005 \
-                -timescale=1ps/1ps -sverilog -full64 -licqueue
-
-# NOTE: undef_vcs_macro is a HACK!!! 
-# `ifdef VCS is only used is in tb.sv top-level in the aws-fpga repository. This
-# macro guards against generating vpd files, which slow down simulation.
-ifeq ($(EXTRA_TURBO), 1)
-VCS_VFLAGS    += +rad -undef_vcs_macro
-else 
-VCS_VFLAGS    += -debug_pp
-VCS_VFLAGS    += +memcbk 
-endif
-
-ifeq ($(TURBO), 1)
-SIM_ARGS += +NO_WAVES
-else 
-SIM_ARGS +=
-endif
-
-ifeq ($(DEBUG), 1)
-VCS_VFLAGS    += -gui
-VCS_VFLAGS    += -R
-VCS_VFLAGS    += -debug_all
-VCS_VFLAGS    += +memcbk
-endif
+                -timescale=1ps/1ps -sverilog -full64 -licqueue +rad
 
 # VCS Generates an executable file by compiling the $(SRC_PATH)/%.c or
 # $(SRC_PATH)/%.cpp file that corresponds to the target test in the
-# $(SRC_PATH) directory.
-$(EXEC_PATH)/%: $(SRC_PATH)/%.c $(CSOURCES) $(CHEADERS) $(SIMLIBS)
+# $(SRC_PATH) directory. % and %_debug targets differ by the arguments
+# used to compile VCS that enable waveform generation and manycore logginc
+
+# The following enables waveform generation for %_debug binaries (but not %)
+$(EXEC_PATH)/%_debug: VCS_VFLAGS += -debug_pp +memcbk
+# The following enables waveform generation for %_debug binaries (but
+# not %) NOTE: undef_vcs_macro is a HACK!!!  `ifdef VCS is only used
+# is in tb.sv top-level in the aws-fpga repository. This macro guards
+# against generating vpd files, which slow down simulation. However,
+# the only way to enable/disable the $vcdplusmemon and $vcdpluson
+# system calls at vcs compile time is to use -undef_vcs_macro
+$(EXEC_PATH)/%_debug: VCS_VFLAGS += -undef_vcs_macro
+$(EXEC_PATH)/% $(EXEC_PATH)/%_debug: $(SRC_PATH)/%.c $(CSOURCES) $(CHEADERS) $(SIMLIBS)
 	SYNOPSYS_SIM_SETUP=$(TESTBENCH_PATH)/synopsys_sim.setup \
 	vcs tb glbl -j$(NPROCS) $(WRAPPER_NAME) $< -Mdirectory=$@.tmp \
 		$(VCS_CFLAGS) $(VCS_CDEFINES) $(VCS_INCLUDES) $(VCS_LDFLAGS) \
 		$(VCS_VFLAGS) -o $@ -l $@.vcs.log
 
-$(EXEC_PATH)/%: $(SRC_PATH)/%.cpp $(CXXSOURCES) $(CXXHEADERS) $(SIMLIBS)
+$(EXEC_PATH)/% $(EXEC_PATH)/%_debug: $(SRC_PATH)/%.cpp $(CXXSOURCES) $(CXXHEADERS) $(SIMLIBS)
 	SYNOPSYS_SIM_SETUP=$(TESTBENCH_PATH)/synopsys_sim.setup \
 	vcs tb glbl -j$(NPROCS) $(WRAPPER_NAME) $< -Mdirectory=$@.tmp \
 		$(VCS_CXXFLAGS) $(VCS_CXXDEFINES) $(VCS_INCLUDES) $(VCS_LDFLAGS) \
 		$(VCS_VFLAGS) -o $@ -l $@.vcs.log
 
 $(REGRESSION_TESTS): %: $(EXEC_PATH)/%
+$(addsuffix _debug,$(REGRESSION_TESTS)): %: $(EXEC_PATH)/%
+
 test_loader: %: $(EXEC_PATH)/%
+test_loader_debug: %: $(EXEC_PATH)/%
 
 # To include a test in cosimulation, the user defines a list of tests in
 # REGRESSION_TESTS. The following two lines defines a rule named

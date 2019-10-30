@@ -136,7 +136,7 @@ SIMLIBS += $(TESTBENCH_PATH)/libfpga_mgmt.so
 SIMLIBS += $(LIBRARIES_PATH)/libbsg_manycore_runtime.so
 SIMLIBS += $(TESTBENCH_PATH)/synopsys_sim.setup
 SIMLIBS += $(WORKDIR)/AN.DB
-WORKDIR = $(TESTBENCH_PATH)/vcs_simlibs/$(PROJECT)
+WORKDIR := $(TESTBENCH_PATH)/vcs_simlibs/$(PROJECT)
 
 # Using the generic variables VSOURCES, VINCLUDES, and VDEFINES, we create
 # tool-specific versions of the same variables. VHEADERS must be compiled before

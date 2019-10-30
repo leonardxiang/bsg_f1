@@ -49,8 +49,13 @@ help:
 	@echo "             generate the vanilla log file"
 	@echo "      clean: Remove all subdirectory-specific outputs"
 
-VANILLA_LOG_RULES = $(addsuffix .vanilla.log,$(REGRESSION_TESTS))
-VANILLA_LOG_TARGETS =$(addprefix $(EXEC_PATH)/,$(VANILLA_LOG_RULES))
+SIM_ARGS += +ntb_random_seed_automatic 
+
+VPD_RULES = $(addsuffix .vpd,$(REGRESSION_TESTS))
+$(VPD_RULES): %: $(EXEC_PATH)/%
+
+VANILLA_LOG_RULES   = $(addsuffix .vanilla.log,$(REGRESSION_TESTS))
+VANILLA_LOG_TARGETS = $(addprefix $(EXEC_PATH)/,$(VANILLA_LOG_RULES))
 $(VANILLA_LOG_RULES): SIM_ARGS +=+trace
 $(VANILLA_LOG_RULES): %.vanilla.log: $(EXEC_PATH)/%.log
 	@mv vanilla.log $@
@@ -60,3 +65,4 @@ $(VANILLA_LOG_RULES): %.vanilla.log: $(EXEC_PATH)/%.log
 
 clean: regression.clean compilation.clean $(USER_CLEAN_RULES)
 	rm -rf *.log
+	rm -rf *_debug

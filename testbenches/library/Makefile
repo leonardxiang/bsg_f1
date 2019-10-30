@@ -76,7 +76,9 @@ include $(REGRESSION_PATH)/$(REGRESSION_TESTS_TYPE)/rules.mk
 # The rule below defines how to run all Library tests. The output .vpd
 # file will be named <test_name>.vpd. To generate a trace file, run
 # `make <test_name>.vanilla.log`
-INDEPENDENT_LOGS=$(foreach tgt, $(INDEPENDENT_TESTS), $(EXEC_PATH)/$(tgt).log)
+INDEPENDENT_LOGS = $(foreach tgt, $(INDEPENDENT_TESTS), $(EXEC_PATH)/$(tgt).log)
+INDEPENDENT_VPDS = $(foreach tgt, $(INDEPENDENT_TESTS), $(EXEC_PATH)/$(tgt).vpd)
+$(INDEPENDENT_VPDS): $(EXEC_PATH)/%.vpd: $(EXEC_PATH)/%_debug %.rule
 $(INDEPENDENT_LOGS): $(EXEC_PATH)/%.log: $(EXEC_PATH)/% %.rule
-	$< 2>&1 +ntb_random_seed_automatic +vpdfile+$<.vpd $(SIM_ARGS) \
-		+c_args="" | tee $@
+$(INDEPENDENT_VPDS) $(INDEPENDENT_LOGS):
+	$< 2>&1 +vpdfile+$(basename $(notdir $@)) $(SIM_ARGS) +c_args="" | tee $@
