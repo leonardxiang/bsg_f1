@@ -135,12 +135,12 @@ $(EXEC_PATH)/%_debug: VCS_VFLAGS += -debug_pp +memcbk
 # against generating vpd files, which slow down simulation. However,
 # the only way to enable/disable the $vcdplusmemon and $vcdpluson
 # system calls at vcs compile time is to use -undef_vcs_macro
-$(EXEC_PATH)/%_debug: VCS_VFLAGS += -undef_vcs_macro
+$(EXEC_PATH)/%: VCS_VFLAGS += -undef_vcs_macro
 $(EXEC_PATH)/% $(EXEC_PATH)/%_debug: $(SRC_PATH)/%.c $(CSOURCES) $(CHEADERS) $(SIMLIBS)
 	SYNOPSYS_SIM_SETUP=$(TESTBENCH_PATH)/synopsys_sim.setup \
 	vcs tb glbl -j$(NPROCS) $(WRAPPER_NAME) $< -Mdirectory=$@.tmp \
 		$(VCS_CFLAGS) $(VCS_CDEFINES) $(VCS_INCLUDES) $(VCS_LDFLAGS) \
-		$(VCS_VFLAGS) -o $@ -l $@.vcs.log
+		$(VCS_VFLAGS) -o $@ -l $@.vcs.log -undef_vcs_macro
 
 $(EXEC_PATH)/% $(EXEC_PATH)/%_debug: $(SRC_PATH)/%.cpp $(CXXSOURCES) $(CXXHEADERS) $(SIMLIBS)
 	SYNOPSYS_SIM_SETUP=$(TESTBENCH_PATH)/synopsys_sim.setup \
