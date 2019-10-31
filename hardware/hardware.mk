@@ -1,19 +1,19 @@
 # Copyright (c) 2019, University of Washington All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
-# 
+#
 # Redistributions of source code must retain the above copyright notice, this list
 # of conditions and the following disclaimer.
-# 
+#
 # Redistributions in binary form must reproduce the above copyright notice, this
 # list of conditions and the following disclaimer in the documentation and/or
 # other materials provided with the distribution.
-# 
+#
 # Neither the name of the copyright holder nor the names of its contributors may
 # be used to endorse or promote products derived from this software without
 # specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -34,7 +34,7 @@
 
 # This file REQUIRES several variables to be set. They are typically
 # set by the Makefile that includes this makefile..
-# 
+#
 # CL_DIR: The path to the root of the BSG F1 Repository
 ifndef CL_DIR
 $(error $(shell echo -e "$(RED)BSG MAKE ERROR: CL_DIR is not defined$(NC)"))
@@ -82,6 +82,7 @@ FPGA_IMAGE_VERSION     ?= 0.0.0
 # sim_filelist.mk. Each file adds to VSOURCES and VINCLUDES and depends on
 # BSG_MANYCORE_DIR
 include $(BSG_MANYCORE_DIR)/machines/arch_filelist.mk
+VSOURCES += $(BASEJUMP_STL_DIR)/bsg_cache/bsg_cache_to_axi.v
 
 # So that we can limit tool-specific to a few specific spots we use VDEFINES,
 # VINCLUDES, and VSOURCES to hold lists of macros, include directores, and
@@ -94,6 +95,7 @@ VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_configuration.v
 VSOURCES += $(HARDWARE_PATH)/cl_manycore_pkg.v
 VSOURCES += $(HARDWARE_PATH)/$(CL_TOP_MODULE).sv
 VSOURCES += $(HARDWARE_PATH)/bsg_manycore_wrapper.v
+VSOURCES += $(HARDWARE_PATH)/axi4_mux.v
 
 VSOURCES += $(CL_DIR)/hardware/bsg_bladerunner_rom.v
 VSOURCES += $(CL_DIR)/hardware/axil_to_mcl.v

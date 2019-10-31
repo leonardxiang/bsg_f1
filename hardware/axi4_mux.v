@@ -3,7 +3,7 @@
 *
 */
 
-`include "bsg_axi4_bus_pkg.vh"
+`include "bsg_axi_bus_pkg.vh"
 
 module axi4_mux #(
 	parameter slot_num_p = "inv"
