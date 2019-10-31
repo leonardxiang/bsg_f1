@@ -1,19 +1,19 @@
 // Copyright (c) 2019, University of Washington All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-// 
+//
 // Redistributions of source code must retain the above copyright notice, this list
 // of conditions and the following disclaimer.
-// 
+//
 // Redistributions in binary form must reproduce the above copyright notice, this
 // list of conditions and the following disclaimer in the documentation and/or
 // other materials provided with the distribution.
-// 
+//
 // Neither the name of the copyright holder nor the names of its contributors may
 // be used to endorse or promote products derived from this software without
 // specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -64,7 +64,7 @@ module cl_manycore
 `include "unused_apppf_irq_template.inc"
 
    localparam lc_clk_main_a0_p = 8000; // 8000 is 125 MHz
-   
+
    //-------------------------------------------------
    // Wires
    //-------------------------------------------------
@@ -204,8 +204,8 @@ module cl_manycore
    //--------------------------------------------
    // AXI-Lite OCL System
    //---------------------------------------------
-   axi_register_slice_light 
-     AXIL_OCL_REG_SLC 
+   axi_register_slice_light
+     AXIL_OCL_REG_SLC
        (
         .aclk          (clk_main_a0),
         .aresetn       (rst_main_n_sync),
@@ -255,12 +255,12 @@ module cl_manycore
 
    logic         ns_core_clk;
    parameter lc_core_clk_period_p =400000;
-   
-   bsg_nonsynth_clock_gen 
+
+   bsg_nonsynth_clock_gen
      #(
        .cycle_time_p(lc_core_clk_period_p)
-       ) 
-   core_clk_gen 
+       )
+   core_clk_gen
      (
       .o(ns_core_clk)
       );
@@ -279,24 +279,24 @@ module cl_manycore
    // in during a clock switch. See the following datasheet for more
    // information:
    // www.xilinx.com/support/documentation/sw_manuals/xilinx2019_1/ug974-vivado-ultrascale-libraries.pdf
-   BUFGMUX 
+   BUFGMUX
      #(
        .CLK_SEL_TYPE("ASYNC") // SYNC, ASYNC
        )
-   BUFGMUX_inst 
+   BUFGMUX_inst
      (
       .O(core_clk), // 1-bit output: Clock output
       .I0(clk_main_a0), // 1-bit input: Clock input (S=0)
       .I1(ns_core_clk), // 1-bit input: Clock input (S=1)
       .S(sh_cl_status_vdip_q2[0]) // 1-bit input: Clock select
       );
-   
+
    // THIS IS AN UNSAFE CLOCK CROSSING. It is only guaranteed to work
    // because 1. We're in cosimulation, and 2. we don't have ongoing
    // transfers at the start or end of simulation. This means that
    // core_clk, and clk_main_a0 *are the same signal* (See BUFGMUX
    // above).
-   assign core_reset = ~rst_main_n_sync; 
+   assign core_reset = ~rst_main_n_sync;
 `else
    assign core_clk = clk_main_a0;
    assign core_reset = ~rst_main_n_sync;
@@ -315,7 +315,7 @@ module cl_manycore
    bsg_manycore_link_sif_s loader_link_sif_lo;
 
 
-   bsg_manycore_wrapper 
+   bsg_manycore_wrapper
      #(
        .addr_width_p(addr_width_p)
        ,.data_width_p(data_width_p)
@@ -332,8 +332,8 @@ module cl_manycore
        ,.vcache_block_size_in_words_p(block_size_in_words_p)
        ,.vcache_sets_p(sets_p)
        ,.branch_trace_en_p(branch_trace_en_p)
-       ) 
-   manycore_wrapper 
+       )
+   manycore_wrapper
      (
       .clk_i(core_clk)
       ,.reset_i(core_reset)
@@ -417,7 +417,7 @@ module cl_manycore
     );
 
   end
-  else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram || 
+  else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
            mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin: lv1_vcache
 
     import bsg_cache_pkg::*;
@@ -485,7 +485,7 @@ module cl_manycore
 
   // LEVEL 2
   //
-  if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram || 
+  if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
       mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin: lv2_axi4
 
     logic [axi_id_width_p-1:0] axi_awid;
@@ -595,7 +595,95 @@ module cl_manycore
       ,.axi_rready_o(axi_rready)
     );
 
-  end // block: lv2_axi4
+  end : lv2_axi4
+
+  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram) begin : lv2_axi4_xbar
+
+    `include "bsg_axi_bus_pkg.vh"
+
+    `declare_bsg_axi4_bus_s(num_tiles_x_p, axi_id_width_p, axi_addr_width_p, axi_data_width_p, \
+                            bsg_axi4_mosi_busXcols_s, bsg_axi4_miso_busXcols_s);
+
+    bsg_axi4_mosi_busXcols_s axi4_mosi_cols_lo;
+    bsg_axi4_miso_busXcols_s axi4_miso_cols_li;
+
+    for(genvar i=0; i<num_tiles_x_p; i++) begin : col_link
+      bsg_cache_to_axi #(
+        .addr_width_p         (cache_addr_width_lp  ),
+        .block_size_in_words_p(block_size_in_words_p),
+        .data_width_p         (data_width_p         ),
+        .num_cache_p          (num_tiles_x_p        ),
+
+        .axi_id_width_p       (axi_id_width_p       ),
+        .axi_addr_width_p     (axi_addr_width_p     ),
+        .axi_data_width_p     (axi_data_width_p     ),
+        .axi_burst_len_p      (axi_burst_len_p      )
+      ) cache_to_axi (
+        .clk_i           (core_clk                       ),
+        .reset_i         (core_reset                     ),
+
+        .dma_pkt_i       (lv1_vcache.dma_pkt[i]          ),
+        .dma_pkt_v_i     (lv1_vcache.dma_pkt_v_lo[i]     ),
+        .dma_pkt_yumi_o  (lv1_vcache.dma_pkt_yumi_li[i]  ),
+
+        .dma_data_o      (lv1_vcache.dma_data_li[i]      ),
+        .dma_data_v_o    (lv1_vcache.dma_data_v_li[i]    ),
+        .dma_data_ready_i(lv1_vcache.dma_data_ready_lo[i]),
+
+        .dma_data_i      (lv1_vcache.dma_data_lo[i]      ),
+        .dma_data_v_i    (lv1_vcache.dma_data_v_lo[i]    ),
+        .dma_data_yumi_o (lv1_vcache.dma_data_yumi_li[i] ),
+
+        .axi_awid_o      (axi4_mosi_cols_lo.awid[i]      ),
+        .axi_awaddr_o    (axi4_mosi_cols_lo.awaddr[i]    ),
+        .axi_awlen_o     (axi4_mosi_cols_lo.awlen[i]     ),
+        .axi_awsize_o    (axi4_mosi_cols_lo.awsize[i]    ),
+        .axi_awburst_o   (axi4_mosi_cols_lo.awburst[i]   ),
+        .axi_awcache_o   (axi4_mosi_cols_lo.awcache[i]   ),
+        .axi_awprot_o    (axi4_mosi_cols_lo.awprot[i]    ),
+        .axi_awlock_o    (axi4_mosi_cols_lo.awlock[i]    ),
+        .axi_awvalid_o   (axi4_mosi_cols_lo.awvalid[i]   ),
+        .axi_awready_i   (axi4_mosi_cols_li.awready[i]   ),
+
+        .axi_wdata_o     (axi4_mosi_cols_lo.wdata[i]     ),
+        .axi_wstrb_o     (axi4_mosi_cols_lo.wstrb[i]     ),
+        .axi_wlast_o     (axi4_mosi_cols_lo.wlast[i]     ),
+        .axi_wvalid_o    (axi4_mosi_cols_lo.wvalid[i]    ),
+        .axi_wready_i    (axi4_mosi_cols_li.wready[i]    ),
+
+        .axi_bid_i       (axi4_mosi_cols_li.bid[i]       ),
+        .axi_bresp_i     (axi4_mosi_cols_li.bresp[i]     ),
+        .axi_bvalid_i    (axi4_mosi_cols_li.bvalid[i]    ),
+        .axi_bready_o    (axi4_mosi_cols_lo.bready[i]    ),
+
+        .axi_arid_o      (axi4_mosi_cols_lo.arid[i]      ),
+        .axi_araddr_o    (axi4_mosi_cols_lo.araddr[i]    ),
+        .axi_arlen_o     (axi4_mosi_cols_lo.arlen[i]     ),
+        .axi_arsize_o    (axi4_mosi_cols_lo.arsize[i]    ),
+        .axi_arburst_o   (axi4_mosi_cols_lo.arburst[i]   ),
+        .axi_arcache_o   (axi4_mosi_cols_lo.arcache[i]   ),
+        .axi_arprot_o    (axi4_mosi_cols_lo.arprot[i]    ),
+        .axi_arlock_o    (axi4_mosi_cols_lo.arlock[i]    ),
+        .axi_arvalid_o   (axi4_mosi_cols_lo.arvalid[i]   ),
+        .axi_arready_i   (axi4_mosi_cols_li.arready[i]   ),
+
+        .axi_rid_i       (axi4_mosi_cols_li.rid[i]       ),
+        .axi_rdata_i     (axi4_mosi_cols_li.rdata[i]     ),
+        .axi_rresp_i     (axi4_mosi_cols_li.rresp[i]     ),
+        .axi_rlast_i     (axi4_mosi_cols_li.rlast[i]     ),
+        .axi_rvalid_i    (axi4_mosi_cols_li.rvalid[i]    ),
+        .axi_rready_o    (axi4_mosi_cols_lo.rready[i]    )
+      );
+
+      assign axi4_mosi_cols_lo.awregion[i] = 4'b0;
+      assign axi4_mosi_cols_lo.awqos[i]    = 4'b0;
+
+      assign axi4_mosi_cols_lo.arregion[i] = 4'b0;
+      assign axi4_mosi_cols_lo.arqos[i]    = 4'b0;
+
+    end : col_link
+
+  end // block: lv2_axi4_xbar
 
   // LEVEL 3
   //
@@ -653,6 +741,77 @@ module cl_manycore
    assign m_axi4_manycore_rready        = lv2_axi4.axi_rready;
   end // if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram)
 
+  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram) begin : xbar_c
+
+    `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p, bsg_axi4_mosi_dram_s, bsg_axi4_miso_dram_s);
+
+    bsg_axi4_mosi_dram_s axi4_dram_bus_lo;
+    bsg_axi4_miso_dram_s axi4_dram_bus_li;
+
+    axi4_mux #(
+      .slot_num_p  (num_tiles_x_p),
+      .id_width_p  (axi_id_width_p),
+      .addr_width_p(axi_addr_width_p),
+      .data_width_p(axi_data_width_p)
+    ) axi4_xbar_mux (
+      .clk_i       (core_clk_i  ),
+      .reset_i     (core_reset  ),
+      .s_axi4_par_i(lv2_axi4_xbar.axi4_mosi_cols_lo),
+      .s_axi4_par_o(lv2_axi4_xbar.axi4_mosi_cols_li),
+      .m_axi4_ser_o(axi4_dram_bus_lo),
+      .m_axi4_ser_i(axi4_dram_bus_li)
+    );
+
+    // AXI Address Write signals
+    assign m_axi4_manycore_awid         = axi4_dram_bus_lo.axi_awid;
+    assign m_axi4_manycore_awaddr       = axi4_dram_bus_lo.axi_awaddr;
+    assign m_axi4_manycore_awvalid      = axi4_dram_bus_lo.axi_awvalid;
+    assign axi4_dram_bus_li.axi_awready = m_axi4_manycore_awready;
+    assign m_axi4_manycore_awlen        = axi4_dram_bus_lo.axi_awlen;
+    assign m_axi4_manycore_awsize       = axi4_dram_bus_lo.axi_awsize;
+    assign m_axi4_manycore_awburst      = axi4_dram_bus_lo.axi_awburst;
+    assign m_axi4_manycore_awcache      = axi4_dram_bus_lo.axi_awcache;
+    assign m_axi4_manycore_awprot       = axi4_dram_bus_lo.axi_awprot;
+    assign m_axi4_manycore_awlock       = axi4_dram_bus_lo.axi_awlock;
+    assign m_axi4_manycore_awregion     = 4'b0;
+    assign m_axi4_manycore_awqos        = 4'b0;
+
+    // AXI Write signals
+    assign m_axi4_manycore_wdata       = axi4_dram_bus_lo.axi_wdata;
+    assign m_axi4_manycore_wstrb       = axi4_dram_bus_lo.axi_wstrb;
+    assign m_axi4_manycore_wlast       = axi4_dram_bus_lo.axi_wlast;
+    assign m_axi4_manycore_wvalid      = axi4_dram_bus_lo.axi_wvalid;
+    assign axi4_dram_bus_li.axi_wready = m_axi4_manycore_wready;
+
+    // AXI Burst signals
+    assign axi4_dram_bus_li.axi_bid    = m_axi4_manycore_bid;
+    assign axi4_dram_bus_li.axi_bresp  = m_axi4_manycore_bresp;
+    assign axi4_dram_bus_li.axi_bvalid = m_axi4_manycore_bvalid;
+    assign m_axi4_manycore_bready      = axi4_dram_bus_lo.axi_bready;
+
+    // AXI Address Read signals
+    assign m_axi4_manycore_arid         = axi4_dram_bus_lo.axi_arid;
+    assign m_axi4_manycore_araddr       = axi4_dram_bus_lo.axi_araddr;
+    assign m_axi4_manycore_arlen        = axi4_dram_bus_lo.axi_arlen;
+    assign m_axi4_manycore_arsize       = axi4_dram_bus_lo.axi_arsize;
+    assign m_axi4_manycore_arburst      = axi4_dram_bus_lo.axi_arburst;
+    assign m_axi4_manycore_arcache      = axi4_dram_bus_lo.axi_arcache;
+    assign m_axi4_manycore_arprot       = axi4_dram_bus_lo.axi_arprot;
+    assign m_axi4_manycore_arlock       = axi4_dram_bus_lo.axi_arlock;
+    assign m_axi4_manycore_arvalid      = axi4_dram_bus_lo.axi_arvalid;
+    assign axi4_dram_bus_li.axi_arready = m_axi4_manycore_arready;
+    assign m_axi4_manycore_arregion     = 4'b0;
+    assign m_axi4_manycore_arqos        = 4'b0;
+
+    // AXI Read signals
+    assign axi4_dram_bus_li.axi_rid    = m_axi4_manycore_rid;
+    assign axi4_dram_bus_li.axi_rdata  = m_axi4_manycore_rdata;
+    assign axi4_dram_bus_li.axi_rresp  = m_axi4_manycore_rresp;
+    assign axi4_dram_bus_li.axi_rlast  = m_axi4_manycore_rlast;
+    assign axi4_dram_bus_li.axi_rvalid = m_axi4_manycore_rvalid;
+    assign m_axi4_manycore_rready      = axi4_dram_bus_lo.axi_rready;
+
+  end
 
 
 `ifdef COSIM
@@ -662,7 +821,7 @@ module cl_manycore
        .C_AXI_ADDR_WIDTH(64),  // Width of s_axi_awaddr, s_axi_araddr, m_axi_awaddr and
        .C_AXI_DATA_WIDTH(512), // Width of WDATA and RDATA (either side).
        .C_S_AXI_ACLK_RATIO(1), // Clock frequency ratio of SI w.r.t. MI. (Slowest of all clock inputs should have ratio=1.)
-       .C_M_AXI_ACLK_RATIO(lc_core_clk_period_p/lc_clk_main_a0_p), 
+       .C_M_AXI_ACLK_RATIO(lc_core_clk_period_p/lc_clk_main_a0_p),
        // S:M or M:S must be integer ratio.
        // Format: Bit32; Range: >='h00000001.
        .C_AXI_IS_ACLK_ASYNC(1), // Indicates whether S and M clocks are asynchronous.
@@ -841,7 +1000,7 @@ module cl_manycore
    bsg_manycore_link_sif_s axil_link_sif_li;
    bsg_manycore_link_sif_s axil_link_sif_lo;
 
-   axil_to_mcl 
+   axil_to_mcl
      #(.num_mcl_p        (1                )
        ,.num_tiles_x_p    (num_tiles_x_p    )
        ,.num_tiles_y_p    (num_tiles_y_p    )
@@ -851,8 +1010,8 @@ module cl_manycore
        ,.y_cord_width_p   (y_cord_width_p   )
        ,.load_id_width_p  (load_id_width_p  )
        ,.max_out_credits_p(max_out_credits_p)
-       ) 
-   axil_to_mcl_inst 
+       )
+   axil_to_mcl_inst
      (
       .clk_i             (clk_main_a0)
       ,.reset_i           (~rst_main_n_sync)
@@ -910,7 +1069,7 @@ module cl_manycore
 
 
    // Integrated Logic Analyzers (ILA)
-   ila_0 CL_ILA_0 
+   ila_0 CL_ILA_0
      (
       .clk    (clk_main_a0),
       .probe0 (m_axil_ocl_awvalid)
@@ -921,7 +1080,7 @@ module cl_manycore
       ,.probe5 (m_axil_ocl_arready)
       );
 
-   ila_0 CL_ILA_1 
+   ila_0 CL_ILA_1
      (
       .clk    (clk_main_a0)
       ,.probe0 (m_axil_ocl_bvalid)
@@ -933,7 +1092,7 @@ module cl_manycore
       );
 
    // Debug Bridge
-   cl_debug_bridge CL_DEBUG_BRIDGE 
+   cl_debug_bridge CL_DEBUG_BRIDGE
      (
       .clk(clk_main_a0)
       ,.S_BSCAN_drck(drck)
@@ -959,7 +1118,7 @@ module cl_manycore
       assign trace_en = $test$plusargs("trace");
    end
 
-   bind vanilla_core vanilla_core_trace 
+   bind vanilla_core vanilla_core_trace
      #(
        .x_cord_width_p(x_cord_width_p)
        ,.y_cord_width_p(y_cord_width_p)
@@ -967,8 +1126,8 @@ module cl_manycore
        ,.icache_entries_p(icache_entries_p)
        ,.data_width_p(data_width_p)
        ,.dmem_size_p(dmem_size_p)
-       ) 
-   vtrace 
+       )
+   vtrace
      (
       .*
       ,.trace_en_i($root.tb.card.fpga.CL.trace_en)
@@ -979,7 +1138,7 @@ module cl_manycore
    //
    logic [31:0] global_ctr;
 
-   bsg_cycle_counter global_cc 
+   bsg_cycle_counter global_cc
      (
       .clk_i(core_clk)
       ,.reset_i(core_reset)
@@ -987,13 +1146,13 @@ module cl_manycore
       );
 
 
-   bind vanilla_core vanilla_core_profiler 
+   bind vanilla_core vanilla_core_profiler
      #(
        .x_cord_width_p(x_cord_width_p)
        ,.y_cord_width_p(y_cord_width_p)
        ,.data_width_p(data_width_p)
        ,.dmem_size_p(data_width_p)
-       ) 
+       )
    vcore_prof
      (
       .*
