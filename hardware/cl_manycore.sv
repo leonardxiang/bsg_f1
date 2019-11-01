@@ -419,7 +419,8 @@ module cl_manycore
   end
   else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
            mem_cfg_p == e_vcache_blocking_axi4_f1_model ||
-           mem_cfg_p == e_vcache_blocking_axi4_xbar_dram) begin: lv1_vcache
+           mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
+           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin: lv1_vcache
 
     import bsg_cache_pkg::*;
 
@@ -529,7 +530,7 @@ module cl_manycore
     logic axi_rvalid;
     logic axi_rready;
 
-    bsg_cache_to_axi_hashed #(
+    bsg_cache_to_axi #(
       .addr_width_p(cache_addr_width_lp)
       ,.block_size_in_words_p(block_size_in_words_p)
       ,.data_width_p(data_width_p)
@@ -598,23 +599,25 @@ module cl_manycore
 
   end : lv2_axi4
 
-  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram) begin : lv2_axi4_xbar
+  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram || 
+           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : lv2_axi4_xbar
 
     `include "bsg_axi_bus_pkg.vh"
 
-    `declare_bsg_axi4_bus_s(num_tiles_x_p, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
-                            bsg_axi4_mosi_busXcols_s, bsg_axi4_miso_busXcols_s);
+    `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
+                            bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
 
-    bsg_axi4_mosi_busXcols_s axi4_mosi_cols_lo;
-    bsg_axi4_miso_busXcols_s axi4_miso_cols_li;
+    bsg_axi4_mosi_bus_s [num_tiles_x_p-1:0] axi4_mosi_cols_lo;
+    bsg_axi4_miso_bus_s [num_tiles_x_p-1:0] axi4_miso_cols_li;
 
-    for(genvar i=0; i<num_tiles_x_p; i++) begin : col_link
+    for(genvar i = 0; i < num_tiles_x_p; i++) begin : col_link
+
       bsg_cache_to_axi #(
         .addr_width_p         (cache_addr_width_lp  ),
         .block_size_in_words_p(block_size_in_words_p),
         .data_width_p         (data_width_p         ),
-        .num_cache_p          (num_tiles_x_p        ),
-
+        .num_cache_p          (1                    ),
+        
         .axi_id_width_p       (axi_id_width_p       ),
         .axi_addr_width_p     (axi_addr_width_p     ),
         .axi_data_width_p     (axi_data_width_p     ),
@@ -622,65 +625,65 @@ module cl_manycore
       ) cache_to_axi (
         .clk_i           (core_clk                       ),
         .reset_i         (core_reset                     ),
-
+        
         .dma_pkt_i       (lv1_vcache.dma_pkt[i]          ),
         .dma_pkt_v_i     (lv1_vcache.dma_pkt_v_lo[i]     ),
         .dma_pkt_yumi_o  (lv1_vcache.dma_pkt_yumi_li[i]  ),
-
+        
         .dma_data_o      (lv1_vcache.dma_data_li[i]      ),
         .dma_data_v_o    (lv1_vcache.dma_data_v_li[i]    ),
         .dma_data_ready_i(lv1_vcache.dma_data_ready_lo[i]),
-
+        
         .dma_data_i      (lv1_vcache.dma_data_lo[i]      ),
         .dma_data_v_i    (lv1_vcache.dma_data_v_lo[i]    ),
         .dma_data_yumi_o (lv1_vcache.dma_data_yumi_li[i] ),
-
-        .axi_awid_o      (axi4_mosi_cols_lo.awid[i]      ),
-        .axi_awaddr_o    (axi4_mosi_cols_lo.awaddr[i]    ),
-        .axi_awlen_o     (axi4_mosi_cols_lo.awlen[i]     ),
-        .axi_awsize_o    (axi4_mosi_cols_lo.awsize[i]    ),
-        .axi_awburst_o   (axi4_mosi_cols_lo.awburst[i]   ),
-        .axi_awcache_o   (axi4_mosi_cols_lo.awcache[i]   ),
-        .axi_awprot_o    (axi4_mosi_cols_lo.awprot[i]    ),
-        .axi_awlock_o    (axi4_mosi_cols_lo.awlock[i]    ),
-        .axi_awvalid_o   (axi4_mosi_cols_lo.awvalid[i]   ),
-        .axi_awready_i   (axi4_miso_cols_li.awready[i]   ),
-
-        .axi_wdata_o     (axi4_mosi_cols_lo.wdata[i]     ),
-        .axi_wstrb_o     (axi4_mosi_cols_lo.wstrb[i]     ),
-        .axi_wlast_o     (axi4_mosi_cols_lo.wlast[i]     ),
-        .axi_wvalid_o    (axi4_mosi_cols_lo.wvalid[i]    ),
-        .axi_wready_i    (axi4_miso_cols_li.wready[i]    ),
-
-        .axi_bid_i       (axi4_miso_cols_li.bid[i]       ),
-        .axi_bresp_i     (axi4_miso_cols_li.bresp[i]     ),
-        .axi_bvalid_i    (axi4_miso_cols_li.bvalid[i]    ),
-        .axi_bready_o    (axi4_mosi_cols_lo.bready[i]    ),
-
-        .axi_arid_o      (axi4_mosi_cols_lo.arid[i]      ),
-        .axi_araddr_o    (axi4_mosi_cols_lo.araddr[i]    ),
-        .axi_arlen_o     (axi4_mosi_cols_lo.arlen[i]     ),
-        .axi_arsize_o    (axi4_mosi_cols_lo.arsize[i]    ),
-        .axi_arburst_o   (axi4_mosi_cols_lo.arburst[i]   ),
-        .axi_arcache_o   (axi4_mosi_cols_lo.arcache[i]   ),
-        .axi_arprot_o    (axi4_mosi_cols_lo.arprot[i]    ),
-        .axi_arlock_o    (axi4_mosi_cols_lo.arlock[i]    ),
-        .axi_arvalid_o   (axi4_mosi_cols_lo.arvalid[i]   ),
-        .axi_arready_i   (axi4_miso_cols_li.arready[i]   ),
-
-        .axi_rid_i       (axi4_miso_cols_li.rid[i]       ),
-        .axi_rdata_i     (axi4_miso_cols_li.rdata[i]     ),
-        .axi_rresp_i     (axi4_miso_cols_li.rresp[i]     ),
-        .axi_rlast_i     (axi4_miso_cols_li.rlast[i]     ),
-        .axi_rvalid_i    (axi4_miso_cols_li.rvalid[i]    ),
-        .axi_rready_o    (axi4_mosi_cols_lo.rready[i]    )
+        
+        .axi_awid_o      (axi4_mosi_cols_lo[i].awid      ),
+        .axi_awaddr_o    (axi4_mosi_cols_lo[i].awaddr    ),
+        .axi_awlen_o     (axi4_mosi_cols_lo[i].awlen     ),
+        .axi_awsize_o    (axi4_mosi_cols_lo[i].awsize    ),
+        .axi_awburst_o   (axi4_mosi_cols_lo[i].awburst   ),
+        .axi_awcache_o   (axi4_mosi_cols_lo[i].awcache   ),
+        .axi_awprot_o    (axi4_mosi_cols_lo[i].awprot    ),
+        .axi_awlock_o    (axi4_mosi_cols_lo[i].awlock    ),
+        .axi_awvalid_o   (axi4_mosi_cols_lo[i].awvalid   ),
+        .axi_awready_i   (axi4_miso_cols_li[i].awready   ),
+        
+        .axi_wdata_o     (axi4_mosi_cols_lo[i].wdata     ),
+        .axi_wstrb_o     (axi4_mosi_cols_lo[i].wstrb     ),
+        .axi_wlast_o     (axi4_mosi_cols_lo[i].wlast     ),
+        .axi_wvalid_o    (axi4_mosi_cols_lo[i].wvalid    ),
+        .axi_wready_i    (axi4_miso_cols_li[i].wready    ),
+        
+        .axi_bid_i       (axi4_miso_cols_li[i].bid       ),
+        .axi_bresp_i     (axi4_miso_cols_li[i].bresp     ),
+        .axi_bvalid_i    (axi4_miso_cols_li[i].bvalid    ),
+        .axi_bready_o    (axi4_mosi_cols_lo[i].bready    ),
+        
+        .axi_arid_o      (axi4_mosi_cols_lo[i].arid      ),
+        .axi_araddr_o    (axi4_mosi_cols_lo[i].araddr    ),
+        .axi_arlen_o     (axi4_mosi_cols_lo[i].arlen     ),
+        .axi_arsize_o    (axi4_mosi_cols_lo[i].arsize    ),
+        .axi_arburst_o   (axi4_mosi_cols_lo[i].arburst   ),
+        .axi_arcache_o   (axi4_mosi_cols_lo[i].arcache   ),
+        .axi_arprot_o    (axi4_mosi_cols_lo[i].arprot    ),
+        .axi_arlock_o    (axi4_mosi_cols_lo[i].arlock    ),
+        .axi_arvalid_o   (axi4_mosi_cols_lo[i].arvalid   ),
+        .axi_arready_i   (axi4_miso_cols_li[i].arready   ),
+        
+        .axi_rid_i       (axi4_miso_cols_li[i].rid       ),
+        .axi_rdata_i     (axi4_miso_cols_li[i].rdata     ),
+        .axi_rresp_i     (axi4_miso_cols_li[i].rresp     ),
+        .axi_rlast_i     (axi4_miso_cols_li[i].rlast     ),
+        .axi_rvalid_i    (axi4_miso_cols_li[i].rvalid    ),
+        .axi_rready_o    (axi4_mosi_cols_lo[i].rready    )
       );
 
-      assign axi4_mosi_cols_lo.awregion[i] = 4'b0;
-      assign axi4_mosi_cols_lo.awqos[i]    = 4'b0;
+      assign axi4_mosi_cols_lo[i].awregion = 4'b0;
+      assign axi4_mosi_cols_lo[i].awqos    = 4'b0;
 
-      assign axi4_mosi_cols_lo.arregion[i] = 4'b0;
-      assign axi4_mosi_cols_lo.arqos[i]    = 4'b0;
+      assign axi4_mosi_cols_lo[i].arregion = 4'b0;
+      assign axi4_mosi_cols_lo[i].arqos    = 4'b0;
 
     end : col_link
 
@@ -742,7 +745,8 @@ module cl_manycore
    assign m_axi4_manycore_rready        = lv2_axi4.axi_rready;
   end : axi4_c // if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram)
 
-  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram) begin : xbar_c
+  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
+           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : xbar_c
 
     `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p, bsg_axi4_mosi_dram_s, bsg_axi4_miso_dram_s);
 
@@ -755,7 +759,7 @@ module cl_manycore
       .addr_width_p(axi_addr_width_p),
       .data_width_p(axi_data_width_p)
     ) axi4_xbar_mux (
-      .clk_i       (core_clk_i  ),
+      .clk_i       (core_clk    ),
       .reset_i     (core_reset  ),
       .s_axi4_par_i(lv2_axi4_xbar.axi4_mosi_cols_lo),
       .s_axi4_par_o(lv2_axi4_xbar.axi4_miso_cols_li),
