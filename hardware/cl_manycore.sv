@@ -599,7 +599,7 @@ module cl_manycore
 
   end : lv2_axi4
 
-  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram || 
+  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
            mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : lv2_axi4_xbar
 
     `include "bsg_axi_bus_pkg.vh"
@@ -617,7 +617,7 @@ module cl_manycore
         .block_size_in_words_p(block_size_in_words_p),
         .data_width_p         (data_width_p         ),
         .num_cache_p          (1                    ),
-        
+
         .axi_id_width_p       (axi_id_width_p       ),
         .axi_addr_width_p     (axi_addr_width_p     ),
         .axi_data_width_p     (axi_data_width_p     ),
@@ -625,19 +625,19 @@ module cl_manycore
       ) cache_to_axi (
         .clk_i           (core_clk                       ),
         .reset_i         (core_reset                     ),
-        
+
         .dma_pkt_i       (lv1_vcache.dma_pkt[i]          ),
         .dma_pkt_v_i     (lv1_vcache.dma_pkt_v_lo[i]     ),
         .dma_pkt_yumi_o  (lv1_vcache.dma_pkt_yumi_li[i]  ),
-        
+
         .dma_data_o      (lv1_vcache.dma_data_li[i]      ),
         .dma_data_v_o    (lv1_vcache.dma_data_v_li[i]    ),
         .dma_data_ready_i(lv1_vcache.dma_data_ready_lo[i]),
-        
+
         .dma_data_i      (lv1_vcache.dma_data_lo[i]      ),
         .dma_data_v_i    (lv1_vcache.dma_data_v_lo[i]    ),
         .dma_data_yumi_o (lv1_vcache.dma_data_yumi_li[i] ),
-        
+
         .axi_awid_o      (axi4_mosi_cols_lo[i].awid      ),
         .axi_awaddr_o    (axi4_mosi_cols_lo[i].awaddr    ),
         .axi_awlen_o     (axi4_mosi_cols_lo[i].awlen     ),
@@ -648,18 +648,18 @@ module cl_manycore
         .axi_awlock_o    (axi4_mosi_cols_lo[i].awlock    ),
         .axi_awvalid_o   (axi4_mosi_cols_lo[i].awvalid   ),
         .axi_awready_i   (axi4_miso_cols_li[i].awready   ),
-        
+
         .axi_wdata_o     (axi4_mosi_cols_lo[i].wdata     ),
         .axi_wstrb_o     (axi4_mosi_cols_lo[i].wstrb     ),
         .axi_wlast_o     (axi4_mosi_cols_lo[i].wlast     ),
         .axi_wvalid_o    (axi4_mosi_cols_lo[i].wvalid    ),
         .axi_wready_i    (axi4_miso_cols_li[i].wready    ),
-        
+
         .axi_bid_i       (axi4_miso_cols_li[i].bid       ),
         .axi_bresp_i     (axi4_miso_cols_li[i].bresp     ),
         .axi_bvalid_i    (axi4_miso_cols_li[i].bvalid    ),
         .axi_bready_o    (axi4_mosi_cols_lo[i].bready    ),
-        
+
         .axi_arid_o      (axi4_mosi_cols_lo[i].arid      ),
         .axi_araddr_o    (axi4_mosi_cols_lo[i].araddr    ),
         .axi_arlen_o     (axi4_mosi_cols_lo[i].arlen     ),
@@ -670,7 +670,7 @@ module cl_manycore
         .axi_arlock_o    (axi4_mosi_cols_lo[i].arlock    ),
         .axi_arvalid_o   (axi4_mosi_cols_lo[i].arvalid   ),
         .axi_arready_i   (axi4_miso_cols_li[i].arready   ),
-        
+
         .axi_rid_i       (axi4_miso_cols_li[i].rid       ),
         .axi_rdata_i     (axi4_miso_cols_li[i].rdata     ),
         .axi_rresp_i     (axi4_miso_cols_li[i].rresp     ),
