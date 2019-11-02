@@ -13,12 +13,12 @@ module axi4_mux #(
   , localparam axi4_mosi_bus_width_lp = `bsg_axi4_mosi_bus_width(1, id_width_p, addr_width_p, data_width_p)
   , localparam axi4_miso_bus_width_lp = `bsg_axi4_miso_bus_width(1, id_width_p, addr_width_p, data_width_p)
 ) (
-  input                                                                 clk_i
-  ,input                                                                 reset_i
-  ,input  logic [            slot_num_p-1:0][axi4_mosi_bus_width_lp-1:0] s_axi4_par_i
-  ,output logic [            slot_num_p-1:0][axi4_miso_bus_width_lp-1:0] s_axi4_par_o
-  ,output       [axi4_mosi_bus_width_lp-1:0]                             m_axi4_ser_o
-  ,input        [axi4_miso_bus_width_lp-1:0]                             m_axi4_ser_i
+  input                                                           clk_i
+  ,input                                                           reset_i
+  ,input  [            slot_num_p-1:0][axi4_mosi_bus_width_lp-1:0] s_axi4_par_i
+  ,output [            slot_num_p-1:0][axi4_miso_bus_width_lp-1:0] s_axi4_par_o
+  ,output [axi4_mosi_bus_width_lp-1:0]                             m_axi4_ser_o
+  ,input  [axi4_miso_bus_width_lp-1:0]                             m_axi4_ser_i
 );
 
 //---------------------------------------------
@@ -28,10 +28,10 @@ module axi4_mux #(
   bsg_axi4_mosi_mux_s s_axi4_par_i_cast;
   bsg_axi4_miso_mux_s s_axi4_par_o_cast;
 
-  for (genvar i = 0; i < slot_num_p; i++) begin
+  logic [slot_num_p-1:0] space_holder;
 
-      always_comb begin: axi4_transpose
-        {s_axi4_par_i_cast.awid[i]
+  for (genvar i = 0; i < slot_num_p; i++) begin
+        assign {s_axi4_par_i_cast.awid[i]
           ,s_axi4_par_i_cast.awaddr[i]
           ,s_axi4_par_i_cast.awlen[i]
           ,s_axi4_par_i_cast.awsize[i]
@@ -65,7 +65,7 @@ module axi4_mux #(
           ,s_axi4_par_i_cast.rready[i]
         } = s_axi4_par_i[i];
 
-        s_axi4_par_o[i] = {
+        assign s_axi4_par_o[i] = {
           s_axi4_par_o_cast.awready[i]
           ,s_axi4_par_o_cast.wready[i]
 
@@ -81,7 +81,6 @@ module axi4_mux #(
           ,s_axi4_par_o_cast.rlast[i]
           ,s_axi4_par_o_cast.rvalid[i]
         };
-      end
     end
 
   `declare_bsg_axi4_bus_s(1, id_width_p, addr_width_p, data_width_p, bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
@@ -100,25 +99,25 @@ module axi4_mux #(
     .C_AXI_DATA_WIDTH           (data_width_p                         ),
     .C_AXI_PROTOCOL             (0                                    ), // 0 is AXI4 Full
     .C_NUM_ADDR_RANGES          (1                                    ),
-    .C_M_AXI_BASE_ADDR          (128'H00000000000000000000000000000000),
-    .C_M_AXI_ADDR_WIDTH         (64'H0000004000000040                 ),
-    .C_S_AXI_BASE_ID            (64'H0000000000000000                 ),
-    .C_S_AXI_THREAD_ID_WIDTH    (64'H0000000500000005                 ),
+    .C_M_AXI_BASE_ADDR          (64'H0000000000000000                 ),
+    .C_M_AXI_ADDR_WIDTH         (32'H00000040                         ),
+    .C_S_AXI_BASE_ID            (128'H00000003000000020000000100000000), // TODO: paramterize with slot_num_p
+    .C_S_AXI_THREAD_ID_WIDTH    (128'H00000004000000040000000400000004),
     .C_AXI_SUPPORTS_USER_SIGNALS(0                                    ),
     .C_AXI_AWUSER_WIDTH         (1                                    ),
     .C_AXI_ARUSER_WIDTH         (1                                    ),
     .C_AXI_WUSER_WIDTH          (1                                    ),
     .C_AXI_RUSER_WIDTH          (1                                    ),
     .C_AXI_BUSER_WIDTH          (1                                    ),
-    .C_M_AXI_WRITE_CONNECTIVITY (32'H00000003                         ),
-    .C_M_AXI_READ_CONNECTIVITY  (32'H00000003                         ),
-    .C_R_REGISTER               (0                                    ),
-    .C_S_AXI_SINGLE_THREAD      (64'H0000000000000000                 ),
-    .C_S_AXI_WRITE_ACCEPTANCE   (64'H0000000200000002                 ),
-    .C_S_AXI_READ_ACCEPTANCE    (64'H0000000200000002                 ),
-    .C_M_AXI_WRITE_ISSUING      (32'H00000004                         ),
-    .C_M_AXI_READ_ISSUING       (32'H00000004                         ),
-    .C_S_AXI_ARB_PRIORITY       (64'H0000000000000000                 ),
+    .C_M_AXI_WRITE_CONNECTIVITY (32'H0000000f                         ),
+    .C_M_AXI_READ_CONNECTIVITY  (32'H0000000f                         ),
+    .C_R_REGISTER               (1                                    ),
+    .C_S_AXI_SINGLE_THREAD      (128'H00000000000000000000000000000000),
+    .C_S_AXI_WRITE_ACCEPTANCE   (128'H00000001000000010000000100000001),
+    .C_S_AXI_READ_ACCEPTANCE    (128'H00000001000000010000000100000001),
+    .C_M_AXI_WRITE_ISSUING      (32'H00000001                         ),
+    .C_M_AXI_READ_ISSUING       (32'H00000001                         ),
+    .C_S_AXI_ARB_PRIORITY       (128'H00000000000000000000000000000000),
     .C_M_AXI_SECURE             (32'H00000000                         ),
     .C_CONNECTIVITY_MODE        (0                                    )
   ) xbar (
