@@ -253,23 +253,23 @@ module cl_manycore
     bsg_axil_mosi_bus_s s_axil_mc_li;
     bsg_axil_miso_bus_s s_axil_mc_lo;
 
-    assign s_axil_mc_lo.awaddr  = m_axil_ocl_awaddr;
-    assign s_axil_mc_lo.awvalid = m_axil_ocl_awvalid;
-    assign m_axil_ocl_awready   = s_axil_mc_li.awread;
-    assign s_axil_mc_lo.wdata   = m_axil_ocl_wdata;
-    assign s_axil_mc_lo.wstrb   = m_axil_ocl_wstrb;
-    assign s_axil_mc_lo.wvalid  = m_axil_ocl_wvalid;
-    assign m_axil_ocl_wready    = s_axil_mc_li.wready;
-    assign m_axil_ocl_bresp     = s_axil_mc_li.bresp ;
-    assign m_axil_ocl_bvalid    = s_axil_mc_li.bvalid;
-    assign s_axil_mc_lo.bready  = m_axil_ocl_bready;
-    assign s_axil_mc_lo.araddr  = m_axil_ocl_araddr;
-    assign s_axil_mc_lo.arvalid = m_axil_ocl_arvalid;
-    assign m_axil_ocl_arready   = s_axil_mc_li.arready;
-    assign m_axil_ocl_rdata     = s_axil_mc_li.rdata ;
-    assign m_axil_ocl_rresp     = s_axil_mc_li.rresp ;
-    assign m_axil_ocl_rvalid    = s_axil_mc_li.rvalid;
-    assign s_axil_mc_lo.rready  = m_axil_ocl_rready;
+    assign s_axil_mc_li.awaddr  = m_axil_ocl_awaddr;
+    assign s_axil_mc_li.awvalid = m_axil_ocl_awvalid;
+    assign m_axil_ocl_awready   = s_axil_mc_lo.awready;
+    assign s_axil_mc_li.wdata   = m_axil_ocl_wdata;
+    assign s_axil_mc_li.wstrb   = m_axil_ocl_wstrb;
+    assign s_axil_mc_li.wvalid  = m_axil_ocl_wvalid;
+    assign m_axil_ocl_wready    = s_axil_mc_lo.wready;
+    assign m_axil_ocl_bresp     = s_axil_mc_lo.bresp ;
+    assign m_axil_ocl_bvalid    = s_axil_mc_lo.bvalid;
+    assign s_axil_mc_li.bready  = m_axil_ocl_bready;
+    assign s_axil_mc_li.araddr  = m_axil_ocl_araddr;
+    assign s_axil_mc_li.arvalid = m_axil_ocl_arvalid;
+    assign m_axil_ocl_arready   = s_axil_mc_lo.arready;
+    assign m_axil_ocl_rdata     = s_axil_mc_lo.rdata ;
+    assign m_axil_ocl_rresp     = s_axil_mc_lo.rresp ;
+    assign m_axil_ocl_rvalid    = s_axil_mc_lo.rvalid;
+    assign s_axil_mc_li.rready  = m_axil_ocl_rready;
 
 
 `ifdef COSIM
@@ -324,7 +324,7 @@ module cl_manycore
    logic         core_clk;
    logic         core_reset;
 
-   // manycore wrapper
+   // bladerunner wrapper
    localparam num_axi_slot_lp = mem_cfg_p == e_vcache_blocking_axi4_hbm ? num_tiles_x_p : 1;
 
   `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
@@ -333,7 +333,8 @@ module cl_manycore
     bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_lo;
     bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_li;
 
-    bsg_bladerunner_wrapper #(.num_axi_slot_p(num_axi_slot_lp)) bsg_hb_mc_wrapper (
+    // hb_manycore
+    bsg_bladerunner_wrapper #(.num_axi_slot_p(num_axi_slot_lp)) hb_mc_wrapper (
       .clk_i       (core_clk        ),
       .reset_i     (core_reset      ),
       .clk2_i      (clk_main_a0     ),
@@ -352,53 +353,53 @@ module cl_manycore
    // Attach cache to output DRAM
 
     // AXI Address Write signals
-    assign m_axi4_manycore_awid     = axi4_mc_cols_lo.awid;
-    assign m_axi4_manycore_awaddr   = axi4_mc_cols_lo.awaddr;
-    assign m_axi4_manycore_awvalid  = axi4_mc_cols_lo.awvalid;
-    assign axi4_mc_cols_li.awready  = m_axi4_manycore_awready;
-    assign m_axi4_manycore_awlen    = axi4_mc_cols_lo.awlen;
-    assign m_axi4_manycore_awsize   = axi4_mc_cols_lo.awsize;
-    assign m_axi4_manycore_awburst  = axi4_mc_cols_lo.awburst;
-    assign m_axi4_manycore_awcache  = axi4_mc_cols_lo.awcache;
-    assign m_axi4_manycore_awprot   = axi4_mc_cols_lo.awprot;
-    assign m_axi4_manycore_awlock   = axi4_mc_cols_lo.awlock;
+    assign m_axi4_manycore_awid     = axi4_mc_cols_lo[0].awid;
+    assign m_axi4_manycore_awaddr   = axi4_mc_cols_lo[0].awaddr;
+    assign m_axi4_manycore_awvalid  = axi4_mc_cols_lo[0].awvalid;
+    assign axi4_mc_cols_li[0].awready  = m_axi4_manycore_awready;
+    assign m_axi4_manycore_awlen    = axi4_mc_cols_lo[0].awlen;
+    assign m_axi4_manycore_awsize   = axi4_mc_cols_lo[0].awsize;
+    assign m_axi4_manycore_awburst  = axi4_mc_cols_lo[0].awburst;
+    assign m_axi4_manycore_awcache  = axi4_mc_cols_lo[0].awcache;
+    assign m_axi4_manycore_awprot   = axi4_mc_cols_lo[0].awprot;
+    assign m_axi4_manycore_awlock   = axi4_mc_cols_lo[0].awlock;
     assign m_axi4_manycore_awregion = 4'b0;
     assign m_axi4_manycore_awqos    = 4'b0;
 
     // AXI Write signals
-    assign m_axi4_manycore_wdata  = axi4_mc_cols_lo.wdata;
-    assign m_axi4_manycore_wstrb  = axi4_mc_cols_lo.wstrb;
-    assign m_axi4_manycore_wlast  = axi4_mc_cols_lo.wlast;
-    assign m_axi4_manycore_wvalid = axi4_mc_cols_lo.wvalid;
-    assign axi4_mc_cols_li.wready = m_axi4_manycore_wready;
+    assign m_axi4_manycore_wdata  = axi4_mc_cols_lo[0].wdata;
+    assign m_axi4_manycore_wstrb  = axi4_mc_cols_lo[0].wstrb;
+    assign m_axi4_manycore_wlast  = axi4_mc_cols_lo[0].wlast;
+    assign m_axi4_manycore_wvalid = axi4_mc_cols_lo[0].wvalid;
+    assign axi4_mc_cols_li[0].wready = m_axi4_manycore_wready;
 
     // AXI Burst signals
-    assign axi4_mc_cols_li.bid    = m_axi4_manycore_bid;
-    assign axi4_mc_cols_li.bresp  = m_axi4_manycore_bresp;
-    assign axi4_mc_cols_li.bvalid = m_axi4_manycore_bvalid;
-    assign m_axi4_manycore_bready = axi4_mc_cols_lo.bready;
+    assign axi4_mc_cols_li[0].bid    = m_axi4_manycore_bid;
+    assign axi4_mc_cols_li[0].bresp  = m_axi4_manycore_bresp;
+    assign axi4_mc_cols_li[0].bvalid = m_axi4_manycore_bvalid;
+    assign m_axi4_manycore_bready = axi4_mc_cols_lo[0].bready;
 
     // AXI Address Read signals
-    assign m_axi4_manycore_arid     = axi4_mc_cols_lo.arid;
-    assign m_axi4_manycore_araddr   = axi4_mc_cols_lo.araddr;
-    assign m_axi4_manycore_arlen    = axi4_mc_cols_lo.arlen;
-    assign m_axi4_manycore_arsize   = axi4_mc_cols_lo.arsize;
-    assign m_axi4_manycore_arburst  = axi4_mc_cols_lo.arburst;
-    assign m_axi4_manycore_arcache  = axi4_mc_cols_lo.arcache;
-    assign m_axi4_manycore_arprot   = axi4_mc_cols_lo.arprot;
-    assign m_axi4_manycore_arlock   = axi4_mc_cols_lo.arlock;
-    assign m_axi4_manycore_arvalid  = axi4_mc_cols_lo.arvalid;
-    assign axi4_mc_cols_li.arready  = m_axi4_manycore_arready;
+    assign m_axi4_manycore_arid     = axi4_mc_cols_lo[0].arid;
+    assign m_axi4_manycore_araddr   = axi4_mc_cols_lo[0].araddr;
+    assign m_axi4_manycore_arlen    = axi4_mc_cols_lo[0].arlen;
+    assign m_axi4_manycore_arsize   = axi4_mc_cols_lo[0].arsize;
+    assign m_axi4_manycore_arburst  = axi4_mc_cols_lo[0].arburst;
+    assign m_axi4_manycore_arcache  = axi4_mc_cols_lo[0].arcache;
+    assign m_axi4_manycore_arprot   = axi4_mc_cols_lo[0].arprot;
+    assign m_axi4_manycore_arlock   = axi4_mc_cols_lo[0].arlock;
+    assign m_axi4_manycore_arvalid  = axi4_mc_cols_lo[0].arvalid;
+    assign axi4_mc_cols_li[0].arready  = m_axi4_manycore_arready;
     assign m_axi4_manycore_arregion = 4'b0;
     assign m_axi4_manycore_arqos    = 4'b0;
 
     // AXI Read signals
-    assign axi4_mc_cols_li.rid    = m_axi4_manycore_rid;
-    assign axi4_mc_cols_li.rdata  = m_axi4_manycore_rdata;
-    assign axi4_mc_cols_li.rresp  = m_axi4_manycore_rresp;
-    assign axi4_mc_cols_li.rlast  = m_axi4_manycore_rlast;
-    assign axi4_mc_cols_li.rvalid = m_axi4_manycore_rvalid;
-    assign m_axi4_manycore_rready = axi4_mc_cols_lo.rready;
+    assign axi4_mc_cols_li[0].rid    = m_axi4_manycore_rid;
+    assign axi4_mc_cols_li[0].rdata  = m_axi4_manycore_rdata;
+    assign axi4_mc_cols_li[0].rresp  = m_axi4_manycore_rresp;
+    assign axi4_mc_cols_li[0].rlast  = m_axi4_manycore_rlast;
+    assign axi4_mc_cols_li[0].rvalid = m_axi4_manycore_rvalid;
+    assign m_axi4_manycore_rready = axi4_mc_cols_lo[0].rready;
 
   end : lv3_axi4_c // if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram)
 
@@ -416,12 +417,12 @@ module cl_manycore
       .addr_width_p(axi_addr_width_p),
       .data_width_p(axi_data_width_p)
     ) axi4_xbar_mux (
-      .clk_i       (core_clk                     ),
-      .reset_i     (core_reset                   ),
-      .s_axi4_par_i(lv2_axi4_vec.axi4_mc_cols_lo),
-      .s_axi4_par_o(lv2_axi4_vec.axi4_mc_cols_li),
-      .m_axi4_ser_o(axi4_dram_bus_lo             ),
-      .m_axi4_ser_i(axi4_dram_bus_li             )
+      .clk_i       (core_clk        ),
+      .reset_i     (core_reset      ),
+      .s_axi4_par_i(axi4_mc_cols_lo ),
+      .s_axi4_par_o(axi4_mc_cols_li ),
+      .m_axi4_ser_o(axi4_dram_bus_lo),
+      .m_axi4_ser_i(axi4_dram_bus_li)
     );
 
     // AXI Address Write signals
@@ -756,8 +757,8 @@ module cl_manycore
      (
       .*
       ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
-      ,.print_stat_v_i($root.tb.card.fpga.CL.print_stat_v_lo)
-      ,.print_stat_tag_i($root.tb.card.fpga.CL.print_stat_tag_lo)
+      ,.print_stat_v_i($root.tb.card.fpga.CL.hb_mc_wrapper.print_stat_v_lo)
+      ,.print_stat_tag_i($root.tb.card.fpga.CL.hb_mc_wrapper.print_stat_tag_lo)
       ,.trace_en_i($root.tb.card.fpga.CL.trace_en)
       );
 

@@ -29,8 +29,8 @@ module bsg_bladerunner_wrapper
   ,input  [axil_mosi_bus_width_lp-1:0]                             s_axil_bus_i
   ,output [axil_miso_bus_width_lp-1:0]                             s_axil_bus_o
   // AXI Memory Mapped interface out
-  ,input  [        num_axi_slot_p-1:0][axi4_mosi_bus_width_lp-1:0] m_axi4_bus_o
-  ,output [        num_axi_slot_p-1:0][axi4_miso_bus_width_lp-1:0] m_axi4_bus_i
+  ,output [        num_axi_slot_p-1:0][axi4_mosi_bus_width_lp-1:0] m_axi4_bus_o
+  ,input  [        num_axi_slot_p-1:0][axi4_miso_bus_width_lp-1:0] m_axi4_bus_i
 );
 
   `include "cl_manycore_defines.vh"

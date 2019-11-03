@@ -32,32 +32,32 @@
 // -----------------------------------------------------------
 // AXI-Lite (simple version)
 // -----------------------------------------------------------
-`define declare_bsg_axil_bus_s(slot_num_mp, mosi_struct_name, miso_struct_name) \
+`define declare_bsg_axil_bus_s(slot_num_lp, mosi_struct_name, miso_struct_name) \
 typedef struct packed { \
-  logic [slot_num_mp-1:0][32-1:0] awaddr ; \
-  logic [slot_num_mp-1:0]         awvalid; \
-  logic [slot_num_mp-1:0][32-1:0] wdata  ; \
-  logic [slot_num_mp-1:0][ 4-1:0] wstrb  ; \
-  logic [slot_num_mp-1:0]         wvalid ; \
+  logic [slot_num_lp*32-1:0] awaddr ; \
+  logic [   slot_num_lp-1:0] awvalid; \
+  logic [slot_num_lp*32-1:0] wdata  ; \
+  logic [ slot_num_lp*4-1:0] wstrb  ; \
+  logic [   slot_num_lp-1:0] wvalid ; \
   \
-  logic [slot_num_mp-1:0] bready; \
+  logic [slot_num_lp-1:0] bready; \
   \
-  logic [slot_num_mp-1:0][32-1:0] araddr ; \
-  logic [slot_num_mp-1:0]         arvalid; \
-  logic [slot_num_mp-1:0]         rready ; \
+  logic [slot_num_lp*32-1:0] araddr ; \
+  logic [   slot_num_lp-1:0] arvalid; \
+  logic [   slot_num_lp-1:0] rready ; \
 } mosi_struct_name; \
 \
 typedef struct packed { \
-  logic [slot_num_mp-1:0] awready; \
-  logic [slot_num_mp-1:0] wready ; \
+  logic [slot_num_lp-1:0] awready; \
+  logic [slot_num_lp-1:0] wready ; \
   \
-  logic [slot_num_mp-1:0][2-1:0] bresp ; \
-  logic [slot_num_mp-1:0]        bvalid; \
+  logic [slot_num_lp*2-1:0] bresp ; \
+  logic [  slot_num_lp-1:0] bvalid; \
   \
-  logic [slot_num_mp-1:0]         arready; \
-  logic [slot_num_mp-1:0][32-1:0] rdata  ; \
-  logic [slot_num_mp-1:0][ 2-1:0] rresp  ; \
-  logic [slot_num_mp-1:0]         rvalid ; \
+  logic [   slot_num_lp-1:0] arready; \
+  logic [slot_num_lp*32-1:0] rdata  ; \
+  logic [ slot_num_lp*2-1:0] rresp  ; \
+  logic [   slot_num_lp-1:0] rvalid ; \
   \
 } miso_struct_name
 
