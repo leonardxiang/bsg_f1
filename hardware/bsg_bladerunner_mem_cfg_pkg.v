@@ -57,6 +57,8 @@ package bsg_bladerunner_mem_cfg_pkg;
     , e_vcache_blocking_axi4_f1_model
     , e_vcache_blocking_axi4_xbar_dram
     , e_vcache_blocking_axi4_xbar_model
+    , e_vcache_blocking_axi4_bram
+    , e_vcache_blocking_axi4_hbm
 
   } bsg_bladerunner_mem_cfg_e;
 

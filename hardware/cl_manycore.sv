@@ -247,8 +247,29 @@ module cl_manycore
         .m_axi_rready  (m_axil_ocl_rready)
         );
 
-   // manycore wrapper
+  `include "bsg_axi_bus_pkg.vh"
 
+    `declare_bsg_axil_bus_s(1, bsg_axil_mosi_bus_s, bsg_axil_miso_bus_s);
+    bsg_axil_mosi_bus_s s_axil_mc_li;
+    bsg_axil_miso_bus_s s_axil_mc_lo;
+
+    assign s_axil_mc_lo.awaddr  = m_axil_ocl_awaddr;
+    assign s_axil_mc_lo.awvalid = m_axil_ocl_awvalid;
+    assign m_axil_ocl_awready   = s_axil_mc_li.awread;
+    assign s_axil_mc_lo.wdata   = m_axil_ocl_wdata;
+    assign s_axil_mc_lo.wstrb   = m_axil_ocl_wstrb;
+    assign s_axil_mc_lo.wvalid  = m_axil_ocl_wvalid;
+    assign m_axil_ocl_wready    = s_axil_mc_li.wready;
+    assign m_axil_ocl_bresp     = s_axil_mc_li.bresp ;
+    assign m_axil_ocl_bvalid    = s_axil_mc_li.bvalid;
+    assign s_axil_mc_lo.bready  = m_axil_ocl_bready;
+    assign s_axil_mc_lo.araddr  = m_axil_ocl_araddr;
+    assign s_axil_mc_lo.arvalid = m_axil_ocl_arvalid;
+    assign m_axil_ocl_arready   = s_axil_mc_li.arready;
+    assign m_axil_ocl_rdata     = s_axil_mc_li.rdata ;
+    assign m_axil_ocl_rresp     = s_axil_mc_li.rresp ;
+    assign m_axil_ocl_rvalid    = s_axil_mc_li.rvalid;
+    assign s_axil_mc_lo.rready  = m_axil_ocl_rready;
 
 
 `ifdef COSIM
@@ -267,9 +288,6 @@ module cl_manycore
 
 `endif
 
-
-   logic         core_clk;
-   logic         core_reset;
 
 `ifdef COSIM
    // This clock mux switches between the "fast" IO Clock and the Slow
@@ -303,450 +321,89 @@ module cl_manycore
 `endif
 
 
-   `declare_bsg_manycore_link_sif_s(addr_width_p, data_width_p, x_cord_width_p, y_cord_width_p, load_id_width_p);
+   logic         core_clk;
+   logic         core_reset;
 
-   bsg_manycore_link_sif_s [num_cache_p-1:0] cache_link_sif_li;
-   bsg_manycore_link_sif_s [num_cache_p-1:0] cache_link_sif_lo;
+   // manycore wrapper
+   localparam num_axi_slot_lp = mem_cfg_p == e_vcache_blocking_axi4_hbm ? num_tiles_x_p : 1;
 
-   logic [num_cache_p-1:0][x_cord_width_p-1:0] cache_x_lo;
-   logic [num_cache_p-1:0][y_cord_width_p-1:0] cache_y_lo;
+  `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
+                          bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
 
-   bsg_manycore_link_sif_s loader_link_sif_li;
-   bsg_manycore_link_sif_s loader_link_sif_lo;
+    bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_lo;
+    bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_li;
 
-
-   bsg_manycore_wrapper
-     #(
-       .addr_width_p(addr_width_p)
-       ,.data_width_p(data_width_p)
-       ,.num_tiles_x_p(num_tiles_x_p)
-       ,.num_tiles_y_p(num_tiles_y_p)
-       ,.dmem_size_p(dmem_size_p)
-       ,.icache_entries_p(icache_entries_p)
-       ,.icache_tag_width_p(icache_tag_width_p)
-       ,.epa_byte_addr_width_p(epa_byte_addr_width_p)
-       ,.dram_ch_addr_width_p(dram_ch_addr_width_p)
-       ,.load_id_width_p(load_id_width_p)
-       ,.num_cache_p(num_cache_p)
-       ,.vcache_size_p(vcache_size_p)
-       ,.vcache_block_size_in_words_p(block_size_in_words_p)
-       ,.vcache_sets_p(sets_p)
-       ,.branch_trace_en_p(branch_trace_en_p)
-       )
-   manycore_wrapper
-     (
-      .clk_i(core_clk)
-      ,.reset_i(core_reset)
-
-      ,.cache_link_sif_i(cache_link_sif_li)
-      ,.cache_link_sif_o(cache_link_sif_lo)
-
-      ,.cache_x_o(cache_x_lo)
-      ,.cache_y_o(cache_y_lo)
-
-      ,.loader_link_sif_i(loader_link_sif_li)
-      ,.loader_link_sif_o(loader_link_sif_lo)
-      );
-
-`ifdef COSIM
-
-   bsg_manycore_link_sif_s async_link_sif_li;
-   bsg_manycore_link_sif_s async_link_sif_lo;
-
-   bsg_manycore_link_sif_async_buffer #(
-                                        .addr_width_p(addr_width_p)
-                                        ,.data_width_p(data_width_p)
-                                        ,.x_cord_width_p(x_cord_width_p)
-                                        ,.y_cord_width_p(y_cord_width_p)
-                                        ,.load_id_width_p(load_id_width_p)
-                                        ,.fifo_els_p(16)
-                                        ) async_buf (
-
-                                                     // core side
-                                                     .L_clk_i(core_clk)
-                                                     ,.L_reset_i(core_reset)
-                                                     ,.L_link_sif_i(loader_link_sif_lo)
-                                                     ,.L_link_sif_o(loader_link_sif_li)
-
-                                                     // AXI-L side
-                                                     ,.R_clk_i(clk_main_a0)
-                                                     ,.R_reset_i(~rst_main_n_sync)
-                                                     ,.R_link_sif_i(async_link_sif_li)
-                                                     ,.R_link_sif_o(async_link_sif_lo)
-                                                     );
-
-`endif
-
-  ////////////////////////////////
-  // Configurable Memory System //
-  ////////////////////////////////
-  localparam byte_offset_width_lp=`BSG_SAFE_CLOG2(data_width_p>>3);
-  localparam cache_addr_width_lp=(addr_width_p-1+byte_offset_width_lp);
-
-   // LEVEL 1
-  if (mem_cfg_p == e_infinite_mem) begin
-    // each column has a nonsynth infinite memory
-    for (genvar i = 0; i < num_tiles_x_p; i++) begin
-      bsg_nonsynth_mem_infinite #(
-        .data_width_p(data_width_p)
-        ,.addr_width_p(addr_width_p)
-        ,.x_cord_width_p(x_cord_width_p)
-        ,.y_cord_width_p(y_cord_width_p)
-        ,.load_id_width_p(load_id_width_p)
-      ) mem_infty (
-        .clk_i(core_clk)
-        ,.reset_i(core_reset)
-        // memory systems link from bsg_manycore_wrapper
-        ,.link_sif_i(cache_link_sif_lo[i])
-        ,.link_sif_o(cache_link_sif_li[i])
-        // coordinates for memory system are determined by bsg_manycore_wrapper
-        ,.my_x_i(cache_x_lo[i])
-        ,.my_y_i(cache_y_lo[i])
-      );
-    end
-
-    bind bsg_nonsynth_mem_infinite infinite_mem_profiler #(
-      .data_width_p(data_width_p)
-      ,.x_cord_width_p(x_cord_width_p)
-      ,.y_cord_width_p(y_cord_width_p)
-    ) infinite_mem_prof (
-      .*
-      ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
-      ,.print_stat_v_i($root.tb.card.fpga.CL.print_stat_v_lo)
-      ,.print_stat_tag_i($root.tb.card.fpga.CL.print_stat_tag_lo)
+    bsg_bladerunner_wrapper #(.num_axi_slot_p(num_axi_slot_lp)) bsg_hb_mc_wrapper (
+      .clk_i       (core_clk        ),
+      .reset_i     (core_reset      ),
+      .clk2_i      (clk_main_a0     ),
+      .reset2_i    (~rst_main_n_sync),
+      .s_axil_bus_i(s_axil_mc_li    ),
+      .s_axil_bus_o(s_axil_mc_lo    ),
+      .m_axi4_bus_o(axi4_mc_cols_lo ),
+      .m_axi4_bus_i(axi4_mc_cols_li )
     );
 
-  end
-  else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
-           mem_cfg_p == e_vcache_blocking_axi4_f1_model ||
-           mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
-           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin: lv1_vcache
-
-    import bsg_cache_pkg::*;
-
-    `declare_bsg_cache_dma_pkt_s(cache_addr_width_lp);
-    bsg_cache_dma_pkt_s [num_tiles_x_p-1:0] dma_pkt;
-    logic [num_tiles_x_p-1:0] dma_pkt_v_lo;
-    logic [num_tiles_x_p-1:0] dma_pkt_yumi_li;
-
-    logic [num_tiles_x_p-1:0][data_width_p-1:0] dma_data_li;
-    logic [num_tiles_x_p-1:0] dma_data_v_li;
-    logic [num_tiles_x_p-1:0] dma_data_ready_lo;
-
-    logic [num_tiles_x_p-1:0][data_width_p-1:0] dma_data_lo;
-    logic [num_tiles_x_p-1:0] dma_data_v_lo;
-    logic [num_tiles_x_p-1:0] dma_data_yumi_li;
-
-    for (genvar i = 0; i < num_tiles_x_p; i++) begin
-
-      bsg_manycore_vcache_blocking #(
-        .data_width_p(data_width_p)
-        ,.addr_width_p(addr_width_p)
-        ,.block_size_in_words_p(block_size_in_words_p)
-        ,.sets_p(sets_p)
-        ,.ways_p(ways_p)
-
-        ,.x_cord_width_p(x_cord_width_p)
-        ,.y_cord_width_p(y_cord_width_p)
-        ,.load_id_width_p(load_id_width_p)
-      ) vcache (
-        .clk_i(core_clk)
-        ,.reset_i(core_reset)
-        // memory systems link from bsg_manycore_wrapper
-        ,.link_sif_i(cache_link_sif_lo[i])
-        ,.link_sif_o(cache_link_sif_li[i])
-        // coordinates for memory system are determined by bsg_manycore_wrapper
-        ,.my_x_i(cache_x_lo[i])
-        ,.my_y_i(cache_y_lo[i])
-
-        ,.dma_pkt_o(dma_pkt[i])
-        ,.dma_pkt_v_o(dma_pkt_v_lo[i])
-        ,.dma_pkt_yumi_i(dma_pkt_yumi_li[i])
-
-        ,.dma_data_i(dma_data_li[i])
-        ,.dma_data_v_i(dma_data_v_li[i])
-        ,.dma_data_ready_o(dma_data_ready_lo[i])
-
-        ,.dma_data_o(dma_data_lo[i])
-        ,.dma_data_v_o(dma_data_v_lo[i])
-        ,.dma_data_yumi_i(dma_data_yumi_li[i])
-     );
-
-    end
-
-    bind bsg_cache vcache_profiler #(
-      .data_width_p(data_width_p)
-    ) vcache_prof (
-      .*
-      ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
-      ,.print_stat_v_i($root.tb.card.fpga.CL.print_stat_v_lo)
-      ,.print_stat_tag_i($root.tb.card.fpga.CL.print_stat_tag_lo)
-    );
-
-  end // block: lv1_vcache
-
-  // LEVEL 2
-  //
-  if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
-      mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin: lv2_axi4
-
-    logic [axi_id_width_p-1:0] axi_awid;
-    logic [axi_addr_width_p-1:0] axi_awaddr;
-    logic [7:0] axi_awlen;
-    logic [2:0] axi_awsize;
-    logic [1:0] axi_awburst;
-    logic [3:0] axi_awcache;
-    logic [2:0] axi_awprot;
-    logic axi_awlock;
-    logic axi_awvalid;
-    logic axi_awready;
-
-    logic [axi_data_width_p-1:0] axi_wdata;
-    logic [axi_strb_width_p-1:0] axi_wstrb;
-    logic axi_wlast;
-    logic axi_wvalid;
-    logic axi_wready;
-
-    logic [axi_id_width_p-1:0] axi_bid;
-    logic [1:0] axi_bresp;
-    logic axi_bvalid;
-    logic axi_bready;
-
-    logic [axi_id_width_p-1:0] axi_arid;
-    logic [axi_addr_width_p-1:0] axi_araddr;
-    logic [7:0] axi_arlen;
-    logic [2:0] axi_arsize;
-    logic [1:0] axi_arburst;
-    logic [3:0] axi_arcache;
-    logic [2:0] axi_arprot;
-    logic axi_arlock;
-    logic axi_arvalid;
-    logic axi_arready;
-
-    logic [axi_id_width_p-1:0] axi_rid;
-    logic [axi_data_width_p-1:0] axi_rdata;
-    logic [1:0] axi_rresp;
-    logic axi_rlast;
-    logic axi_rvalid;
-    logic axi_rready;
-
-    bsg_cache_to_axi #(
-      .addr_width_p(cache_addr_width_lp)
-      ,.block_size_in_words_p(block_size_in_words_p)
-      ,.data_width_p(data_width_p)
-      ,.num_cache_p(num_tiles_x_p)
-
-      ,.axi_id_width_p(axi_id_width_p)
-      ,.axi_addr_width_p(axi_addr_width_p)
-      ,.axi_data_width_p(axi_data_width_p)
-      ,.axi_burst_len_p(axi_burst_len_p)
-    ) cache_to_axi (
-      .clk_i(core_clk)
-      ,.reset_i(core_reset)
-
-      ,.dma_pkt_i(lv1_vcache.dma_pkt)
-      ,.dma_pkt_v_i(lv1_vcache.dma_pkt_v_lo)
-      ,.dma_pkt_yumi_o(lv1_vcache.dma_pkt_yumi_li)
-
-      ,.dma_data_o(lv1_vcache.dma_data_li)
-      ,.dma_data_v_o(lv1_vcache.dma_data_v_li)
-      ,.dma_data_ready_i(lv1_vcache.dma_data_ready_lo)
-
-      ,.dma_data_i(lv1_vcache.dma_data_lo)
-      ,.dma_data_v_i(lv1_vcache.dma_data_v_lo)
-      ,.dma_data_yumi_o(lv1_vcache.dma_data_yumi_li)
-
-      ,.axi_awid_o(axi_awid)
-      ,.axi_awaddr_o(axi_awaddr)
-      ,.axi_awlen_o(axi_awlen)
-      ,.axi_awsize_o(axi_awsize)
-      ,.axi_awburst_o(axi_awburst)
-      ,.axi_awcache_o(axi_awcache)
-      ,.axi_awprot_o(axi_awprot)
-      ,.axi_awlock_o(axi_awlock)
-      ,.axi_awvalid_o(axi_awvalid)
-      ,.axi_awready_i(axi_awready)
-
-      ,.axi_wdata_o(axi_wdata)
-      ,.axi_wstrb_o(axi_wstrb)
-      ,.axi_wlast_o(axi_wlast)
-      ,.axi_wvalid_o(axi_wvalid)
-      ,.axi_wready_i(axi_wready)
-
-      ,.axi_bid_i(axi_bid)
-      ,.axi_bresp_i(axi_bresp)
-      ,.axi_bvalid_i(axi_bvalid)
-      ,.axi_bready_o(axi_bready)
-
-      ,.axi_arid_o(axi_arid)
-      ,.axi_araddr_o(axi_araddr)
-      ,.axi_arlen_o(axi_arlen)
-      ,.axi_arsize_o(axi_arsize)
-      ,.axi_arburst_o(axi_arburst)
-      ,.axi_arcache_o(axi_arcache)
-      ,.axi_arprot_o(axi_arprot)
-      ,.axi_arlock_o(axi_arlock)
-      ,.axi_arvalid_o(axi_arvalid)
-      ,.axi_arready_i(axi_arready)
-
-      ,.axi_rid_i(axi_rid)
-      ,.axi_rdata_i(axi_rdata)
-      ,.axi_rresp_i(axi_rresp)
-      ,.axi_rlast_i(axi_rlast)
-      ,.axi_rvalid_i(axi_rvalid)
-      ,.axi_rready_o(axi_rready)
-    );
-
-  end : lv2_axi4
-
-  else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
-           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : lv2_axi4_xbar
-
-    `include "bsg_axi_bus_pkg.vh"
-
-    `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
-                            bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
-
-    bsg_axi4_mosi_bus_s [num_tiles_x_p-1:0] axi4_mosi_cols_lo;
-    bsg_axi4_miso_bus_s [num_tiles_x_p-1:0] axi4_miso_cols_li;
-
-    for(genvar i = 0; i < num_tiles_x_p; i++) begin : col_link
-
-      bsg_cache_to_axi #(
-        .addr_width_p         (cache_addr_width_lp  ),
-        .block_size_in_words_p(block_size_in_words_p),
-        .data_width_p         (data_width_p         ),
-        .num_cache_p          (1                    ),
-
-        .axi_id_width_p       (axi_id_width_p       ),
-        .axi_addr_width_p     (axi_addr_width_p     ),
-        .axi_data_width_p     (axi_data_width_p     ),
-        .axi_burst_len_p      (axi_burst_len_p      )
-      ) cache_to_axi (
-        .clk_i           (core_clk                       ),
-        .reset_i         (core_reset                     ),
-
-        .dma_pkt_i       (lv1_vcache.dma_pkt[i]          ),
-        .dma_pkt_v_i     (lv1_vcache.dma_pkt_v_lo[i]     ),
-        .dma_pkt_yumi_o  (lv1_vcache.dma_pkt_yumi_li[i]  ),
-
-        .dma_data_o      (lv1_vcache.dma_data_li[i]      ),
-        .dma_data_v_o    (lv1_vcache.dma_data_v_li[i]    ),
-        .dma_data_ready_i(lv1_vcache.dma_data_ready_lo[i]),
-
-        .dma_data_i      (lv1_vcache.dma_data_lo[i]      ),
-        .dma_data_v_i    (lv1_vcache.dma_data_v_lo[i]    ),
-        .dma_data_yumi_o (lv1_vcache.dma_data_yumi_li[i] ),
-
-        .axi_awid_o      (axi4_mosi_cols_lo[i].awid      ),
-        .axi_awaddr_o    (axi4_mosi_cols_lo[i].awaddr    ),
-        .axi_awlen_o     (axi4_mosi_cols_lo[i].awlen     ),
-        .axi_awsize_o    (axi4_mosi_cols_lo[i].awsize    ),
-        .axi_awburst_o   (axi4_mosi_cols_lo[i].awburst   ),
-        .axi_awcache_o   (axi4_mosi_cols_lo[i].awcache   ),
-        .axi_awprot_o    (axi4_mosi_cols_lo[i].awprot    ),
-        .axi_awlock_o    (axi4_mosi_cols_lo[i].awlock    ),
-        .axi_awvalid_o   (axi4_mosi_cols_lo[i].awvalid   ),
-        .axi_awready_i   (axi4_miso_cols_li[i].awready   ),
-
-        .axi_wdata_o     (axi4_mosi_cols_lo[i].wdata     ),
-        .axi_wstrb_o     (axi4_mosi_cols_lo[i].wstrb     ),
-        .axi_wlast_o     (axi4_mosi_cols_lo[i].wlast     ),
-        .axi_wvalid_o    (axi4_mosi_cols_lo[i].wvalid    ),
-        .axi_wready_i    (axi4_miso_cols_li[i].wready    ),
-
-        .axi_bid_i       (axi4_miso_cols_li[i].bid       ),
-        .axi_bresp_i     (axi4_miso_cols_li[i].bresp     ),
-        .axi_bvalid_i    (axi4_miso_cols_li[i].bvalid    ),
-        .axi_bready_o    (axi4_mosi_cols_lo[i].bready    ),
-
-        .axi_arid_o      (axi4_mosi_cols_lo[i].arid      ),
-        .axi_araddr_o    (axi4_mosi_cols_lo[i].araddr    ),
-        .axi_arlen_o     (axi4_mosi_cols_lo[i].arlen     ),
-        .axi_arsize_o    (axi4_mosi_cols_lo[i].arsize    ),
-        .axi_arburst_o   (axi4_mosi_cols_lo[i].arburst   ),
-        .axi_arcache_o   (axi4_mosi_cols_lo[i].arcache   ),
-        .axi_arprot_o    (axi4_mosi_cols_lo[i].arprot    ),
-        .axi_arlock_o    (axi4_mosi_cols_lo[i].arlock    ),
-        .axi_arvalid_o   (axi4_mosi_cols_lo[i].arvalid   ),
-        .axi_arready_i   (axi4_miso_cols_li[i].arready   ),
-
-        .axi_rid_i       (axi4_miso_cols_li[i].rid       ),
-        .axi_rdata_i     (axi4_miso_cols_li[i].rdata     ),
-        .axi_rresp_i     (axi4_miso_cols_li[i].rresp     ),
-        .axi_rlast_i     (axi4_miso_cols_li[i].rlast     ),
-        .axi_rvalid_i    (axi4_miso_cols_li[i].rvalid    ),
-        .axi_rready_o    (axi4_mosi_cols_lo[i].rready    )
-      );
-
-      assign axi4_mosi_cols_lo[i].awregion = 4'b0;
-      assign axi4_mosi_cols_lo[i].awqos    = 4'b0;
-
-      assign axi4_mosi_cols_lo[i].arregion = 4'b0;
-      assign axi4_mosi_cols_lo[i].arqos    = 4'b0;
-
-    end : col_link
-
-  end // block: lv2_axi4_xbar
 
   // LEVEL 3
   //
   if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
-      mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : axi4_c
+      mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv3_axi4_c
    // Attach cache to output DRAM
 
-   // AXI Address Write signals
-   assign m_axi4_manycore_awid          = lv2_axi4.axi_awid;
-   assign m_axi4_manycore_awaddr        = lv2_axi4.axi_awaddr;
-   assign m_axi4_manycore_awvalid       = lv2_axi4.axi_awvalid;
-   assign lv2_axi4.axi_awready          = m_axi4_manycore_awready;
-   assign m_axi4_manycore_awlen         =  lv2_axi4.axi_awlen;
-   assign m_axi4_manycore_awsize        = lv2_axi4.axi_awsize;
-   assign m_axi4_manycore_awburst       = lv2_axi4.axi_awburst;
-   assign m_axi4_manycore_awcache       = lv2_axi4.axi_awcache;
-   assign m_axi4_manycore_awprot        = lv2_axi4.axi_awprot;
-   assign m_axi4_manycore_awlock        = lv2_axi4.axi_awlock;
-   assign m_axi4_manycore_awregion      = 4'b0;
-   assign m_axi4_manycore_awqos         = 4'b0;
+    // AXI Address Write signals
+    assign m_axi4_manycore_awid     = axi4_mc_cols_lo.awid;
+    assign m_axi4_manycore_awaddr   = axi4_mc_cols_lo.awaddr;
+    assign m_axi4_manycore_awvalid  = axi4_mc_cols_lo.awvalid;
+    assign axi4_mc_cols_li.awready  = m_axi4_manycore_awready;
+    assign m_axi4_manycore_awlen    = axi4_mc_cols_lo.awlen;
+    assign m_axi4_manycore_awsize   = axi4_mc_cols_lo.awsize;
+    assign m_axi4_manycore_awburst  = axi4_mc_cols_lo.awburst;
+    assign m_axi4_manycore_awcache  = axi4_mc_cols_lo.awcache;
+    assign m_axi4_manycore_awprot   = axi4_mc_cols_lo.awprot;
+    assign m_axi4_manycore_awlock   = axi4_mc_cols_lo.awlock;
+    assign m_axi4_manycore_awregion = 4'b0;
+    assign m_axi4_manycore_awqos    = 4'b0;
 
-   // AXI Write signals
-   assign m_axi4_manycore_wdata         = lv2_axi4.axi_wdata;
-   assign m_axi4_manycore_wstrb         = lv2_axi4.axi_wstrb;
-   assign m_axi4_manycore_wlast         = lv2_axi4.axi_wlast;
-   assign m_axi4_manycore_wvalid        = lv2_axi4.axi_wvalid;
-   assign lv2_axi4.axi_wready           = m_axi4_manycore_wready;
+    // AXI Write signals
+    assign m_axi4_manycore_wdata  = axi4_mc_cols_lo.wdata;
+    assign m_axi4_manycore_wstrb  = axi4_mc_cols_lo.wstrb;
+    assign m_axi4_manycore_wlast  = axi4_mc_cols_lo.wlast;
+    assign m_axi4_manycore_wvalid = axi4_mc_cols_lo.wvalid;
+    assign axi4_mc_cols_li.wready = m_axi4_manycore_wready;
 
-   // AXI Burst signals
-   assign lv2_axi4.axi_bid              = m_axi4_manycore_bid;
-   assign lv2_axi4.axi_bresp            = m_axi4_manycore_bresp;
-   assign lv2_axi4.axi_bvalid           = m_axi4_manycore_bvalid;
-   assign m_axi4_manycore_bready        = lv2_axi4.axi_bready;
+    // AXI Burst signals
+    assign axi4_mc_cols_li.bid    = m_axi4_manycore_bid;
+    assign axi4_mc_cols_li.bresp  = m_axi4_manycore_bresp;
+    assign axi4_mc_cols_li.bvalid = m_axi4_manycore_bvalid;
+    assign m_axi4_manycore_bready = axi4_mc_cols_lo.bready;
 
-   // AXI Address Read signals
-   assign m_axi4_manycore_arid          = lv2_axi4.axi_arid;
-   assign m_axi4_manycore_araddr        = lv2_axi4.axi_araddr;
-   assign m_axi4_manycore_arlen         = lv2_axi4.axi_arlen;
-   assign m_axi4_manycore_arsize        = lv2_axi4.axi_arsize;
-   assign m_axi4_manycore_arburst       = lv2_axi4.axi_arburst;
-   assign m_axi4_manycore_arcache       = lv2_axi4.axi_arcache;
-   assign m_axi4_manycore_arprot        = lv2_axi4.axi_arprot;
-   assign m_axi4_manycore_arlock        = lv2_axi4.axi_arlock;
-   assign m_axi4_manycore_arvalid       = lv2_axi4.axi_arvalid;
-   assign lv2_axi4.axi_arready          = m_axi4_manycore_arready;
-   assign m_axi4_manycore_arregion      = 4'b0;
-   assign m_axi4_manycore_arqos         = 4'b0;
+    // AXI Address Read signals
+    assign m_axi4_manycore_arid     = axi4_mc_cols_lo.arid;
+    assign m_axi4_manycore_araddr   = axi4_mc_cols_lo.araddr;
+    assign m_axi4_manycore_arlen    = axi4_mc_cols_lo.arlen;
+    assign m_axi4_manycore_arsize   = axi4_mc_cols_lo.arsize;
+    assign m_axi4_manycore_arburst  = axi4_mc_cols_lo.arburst;
+    assign m_axi4_manycore_arcache  = axi4_mc_cols_lo.arcache;
+    assign m_axi4_manycore_arprot   = axi4_mc_cols_lo.arprot;
+    assign m_axi4_manycore_arlock   = axi4_mc_cols_lo.arlock;
+    assign m_axi4_manycore_arvalid  = axi4_mc_cols_lo.arvalid;
+    assign axi4_mc_cols_li.arready  = m_axi4_manycore_arready;
+    assign m_axi4_manycore_arregion = 4'b0;
+    assign m_axi4_manycore_arqos    = 4'b0;
 
-   // AXI Read signals
-   assign lv2_axi4.axi_rid              = m_axi4_manycore_rid;
-   assign lv2_axi4.axi_rdata            = m_axi4_manycore_rdata;
-   assign lv2_axi4.axi_rresp            = m_axi4_manycore_rresp;
-   assign lv2_axi4.axi_rlast            = m_axi4_manycore_rlast;
-   assign lv2_axi4.axi_rvalid           = m_axi4_manycore_rvalid;
-   assign m_axi4_manycore_rready        = lv2_axi4.axi_rready;
-  end : axi4_c // if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram)
+    // AXI Read signals
+    assign axi4_mc_cols_li.rid    = m_axi4_manycore_rid;
+    assign axi4_mc_cols_li.rdata  = m_axi4_manycore_rdata;
+    assign axi4_mc_cols_li.rresp  = m_axi4_manycore_rresp;
+    assign axi4_mc_cols_li.rlast  = m_axi4_manycore_rlast;
+    assign axi4_mc_cols_li.rvalid = m_axi4_manycore_rvalid;
+    assign m_axi4_manycore_rready = axi4_mc_cols_lo.rready;
+
+  end : lv3_axi4_c // if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram)
 
   else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
-           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : xbar_c
+           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : lv3_xbar_c
 
     `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p, bsg_axi4_mosi_dram_s, bsg_axi4_miso_dram_s);
 
@@ -754,17 +411,17 @@ module cl_manycore
     bsg_axi4_miso_dram_s axi4_dram_bus_li;
 
     axi4_mux #(
-      .slot_num_p  (num_tiles_x_p),
-      .id_width_p  (axi_id_width_p),
+      .slot_num_p  (num_tiles_x_p   ),
+      .id_width_p  (axi_id_width_p  ),
       .addr_width_p(axi_addr_width_p),
       .data_width_p(axi_data_width_p)
     ) axi4_xbar_mux (
-      .clk_i       (core_clk    ),
-      .reset_i     (core_reset  ),
-      .s_axi4_par_i(lv2_axi4_xbar.axi4_mosi_cols_lo),
-      .s_axi4_par_o(lv2_axi4_xbar.axi4_miso_cols_li),
-      .m_axi4_ser_o(axi4_dram_bus_lo),
-      .m_axi4_ser_i(axi4_dram_bus_li)
+      .clk_i       (core_clk                     ),
+      .reset_i     (core_reset                   ),
+      .s_axi4_par_i(lv2_axi4_vec.axi4_mc_cols_lo),
+      .s_axi4_par_o(lv2_axi4_vec.axi4_mc_cols_li),
+      .m_axi4_ser_o(axi4_dram_bus_lo             ),
+      .m_axi4_ser_i(axi4_dram_bus_li             )
     );
 
     // AXI Address Write signals
@@ -994,69 +651,6 @@ module cl_manycore
    assign m_axi4_manycore_arready = sh_cl_ddr_arready;
 `endif
 
-   // manycore link
-
-   logic [x_cord_width_p-1:0] mcl_x_cord_lp = '0;
-   logic [y_cord_width_p-1:0] mcl_y_cord_lp = '0;
-
-   logic                      print_stat_v_lo;
-   logic [data_width_p-1:0]   print_stat_tag_lo;
-
-   bsg_manycore_link_sif_s axil_link_sif_li;
-   bsg_manycore_link_sif_s axil_link_sif_lo;
-
-   axil_to_mcl
-     #(.num_mcl_p        (1                )
-       ,.num_tiles_x_p    (num_tiles_x_p    )
-       ,.num_tiles_y_p    (num_tiles_y_p    )
-       ,.addr_width_p     (addr_width_p     )
-       ,.data_width_p     (data_width_p     )
-       ,.x_cord_width_p   (x_cord_width_p   )
-       ,.y_cord_width_p   (y_cord_width_p   )
-       ,.load_id_width_p  (load_id_width_p  )
-       ,.max_out_credits_p(max_out_credits_p)
-       )
-   axil_to_mcl_inst
-     (
-      .clk_i             (clk_main_a0)
-      ,.reset_i           (~rst_main_n_sync)
-
-      // axil slave interface
-      ,.s_axil_mcl_awvalid(m_axil_ocl_awvalid)
-      ,.s_axil_mcl_awaddr (m_axil_ocl_awaddr )
-      ,.s_axil_mcl_awready(m_axil_ocl_awready)
-      ,.s_axil_mcl_wvalid (m_axil_ocl_wvalid )
-      ,.s_axil_mcl_wdata  (m_axil_ocl_wdata  )
-      ,.s_axil_mcl_wstrb  (m_axil_ocl_wstrb  )
-      ,.s_axil_mcl_wready (m_axil_ocl_wready )
-      ,.s_axil_mcl_bresp  (m_axil_ocl_bresp  )
-      ,.s_axil_mcl_bvalid (m_axil_ocl_bvalid )
-      ,.s_axil_mcl_bready (m_axil_ocl_bready )
-      ,.s_axil_mcl_araddr (m_axil_ocl_araddr )
-      ,.s_axil_mcl_arvalid(m_axil_ocl_arvalid)
-      ,.s_axil_mcl_arready(m_axil_ocl_arready)
-      ,.s_axil_mcl_rdata  (m_axil_ocl_rdata  )
-      ,.s_axil_mcl_rresp  (m_axil_ocl_rresp  )
-      ,.s_axil_mcl_rvalid (m_axil_ocl_rvalid )
-      ,.s_axil_mcl_rready (m_axil_ocl_rready )
-
-      // manycore link
-      ,.link_sif_i        (axil_link_sif_li)
-      ,.link_sif_o        (axil_link_sif_lo)
-      ,.my_x_i            (mcl_x_cord_lp     )
-      ,.my_y_i            (mcl_y_cord_lp     )
-
-      ,.print_stat_v_o(print_stat_v_lo)
-      ,.print_stat_tag_o(print_stat_tag_lo)
-      );
-
-`ifdef COSIM
-   assign axil_link_sif_li = async_link_sif_lo;
-   assign async_link_sif_li = axil_link_sif_lo;
-`else
-   assign axil_link_sif_li = loader_link_sif_lo;
-   assign loader_link_sif_li = axil_link_sif_lo;
-`endif
 
    //-----------------------------------------------
    // Debug bridge, used if need Virtual JTAG
