@@ -289,6 +289,9 @@ module cl_manycore
 `endif
 
 
+   logic         core_clk;
+   logic         core_reset;
+
 `ifdef COSIM
    // This clock mux switches between the "fast" IO Clock and the Slow
    // Unsynthesizable "Core Clk". The assign logic below introduces
@@ -321,11 +324,11 @@ module cl_manycore
 `endif
 
 
-   logic         core_clk;
-   logic         core_reset;
-
    // bladerunner wrapper
-   localparam num_axi_slot_lp = mem_cfg_p == e_vcache_blocking_axi4_hbm ? num_tiles_x_p : 1;
+   localparam num_axi_slot_lp = (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
+                                 mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
+                                 mem_cfg_p == e_vcache_blocking_axi4_hbm) ?
+                                num_tiles_x_p : 1;
 
   `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
                           bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);

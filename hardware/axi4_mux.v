@@ -90,36 +90,69 @@ module axi4_mux #(
   assign m_axi4_ser_o      = m_axi4_ser_o_cast;
   assign m_axi4_ser_i_cast = m_axi4_ser_i;
 
+
+  localparam [slot_num_p*64-1:0] S_AXI_THREAD_ID_WIDTH = {slot_num_p{64'd4}};
+  localparam [slot_num_p*64-1:0] S_AXI_WRITE_ACCEPTANCE = {slot_num_p{64'd1}};
+  localparam [slot_num_p*64-1:0] S_AXI_READ_ACCEPTANCE = {slot_num_p{64'd1}};
+
+  // synopsys translate_off
+  initial begin
+    assert (slot_num_p <= 16)
+      else $fatal(0, "Could not support slot_num_p > 16!");
+  end
+  // synopsys translate_on
+
+  `define LSHIFT_ADDITION(ls, val) + (ls << val)
+
+  parameter S_AXI_BASE_ID = (slot_num_p*64)'(
+    `LSHIFT_ADDITION(64*0, 0)
+    `LSHIFT_ADDITION(64*1, 1)
+    `LSHIFT_ADDITION(64*2, 2)
+    `LSHIFT_ADDITION(64*3, 3)
+    `LSHIFT_ADDITION(64*4, 4)
+    `LSHIFT_ADDITION(64*5, 5)
+    `LSHIFT_ADDITION(64*6, 6)
+    `LSHIFT_ADDITION(64*7, 7)
+    `LSHIFT_ADDITION(64*8, 8)
+    `LSHIFT_ADDITION(64*9, 9)
+    `LSHIFT_ADDITION(64*10, 10)
+    `LSHIFT_ADDITION(64*11, 11)
+    `LSHIFT_ADDITION(64*12, 12)
+    `LSHIFT_ADDITION(64*13, 13)
+    `LSHIFT_ADDITION(64*14, 14)
+    `LSHIFT_ADDITION(64*15, 15)
+  );
+
   axi_crossbar_v2_1_20_axi_crossbar #(
-    .C_FAMILY                   ("virtexuplus"                        ),
-    .C_NUM_SLAVE_SLOTS          (slot_num_p                           ),
-    .C_NUM_MASTER_SLOTS         (1                                    ),
-    .C_AXI_ID_WIDTH             (id_width_p                           ),
-    .C_AXI_ADDR_WIDTH           (addr_width_p                         ),
-    .C_AXI_DATA_WIDTH           (data_width_p                         ),
-    .C_AXI_PROTOCOL             (0                                    ), // 0 is AXI4 Full
-    .C_NUM_ADDR_RANGES          (1                                    ),
-    .C_M_AXI_BASE_ADDR          (64'H0000000000000000                 ),
-    .C_M_AXI_ADDR_WIDTH         (32'H00000040                         ),
-    .C_S_AXI_BASE_ID            (128'H00000003000000020000000100000000), // TODO: paramterize with slot_num_p
-    .C_S_AXI_THREAD_ID_WIDTH    (128'H00000004000000040000000400000004),
-    .C_AXI_SUPPORTS_USER_SIGNALS(0                                    ),
-    .C_AXI_AWUSER_WIDTH         (1                                    ),
-    .C_AXI_ARUSER_WIDTH         (1                                    ),
-    .C_AXI_WUSER_WIDTH          (1                                    ),
-    .C_AXI_RUSER_WIDTH          (1                                    ),
-    .C_AXI_BUSER_WIDTH          (1                                    ),
-    .C_M_AXI_WRITE_CONNECTIVITY (32'H0000000f                         ),
-    .C_M_AXI_READ_CONNECTIVITY  (32'H0000000f                         ),
-    .C_R_REGISTER               (1                                    ),
-    .C_S_AXI_SINGLE_THREAD      (128'H00000000000000000000000000000000),
-    .C_S_AXI_WRITE_ACCEPTANCE   (128'H00000001000000010000000100000001),
-    .C_S_AXI_READ_ACCEPTANCE    (128'H00000001000000010000000100000001),
-    .C_M_AXI_WRITE_ISSUING      (32'H00000001                         ),
-    .C_M_AXI_READ_ISSUING       (32'H00000001                         ),
-    .C_S_AXI_ARB_PRIORITY       (128'H00000000000000000000000000000000),
-    .C_M_AXI_SECURE             (32'H00000000                         ),
-    .C_CONNECTIVITY_MODE        (0                                    )
+    .C_FAMILY                   ("virtexuplus"         ),
+    .C_NUM_SLAVE_SLOTS          (slot_num_p            ),
+    .C_NUM_MASTER_SLOTS         (1                     ),
+    .C_AXI_ID_WIDTH             (id_width_p            ),
+    .C_AXI_ADDR_WIDTH           (addr_width_p          ),
+    .C_AXI_DATA_WIDTH           (data_width_p          ),
+    .C_AXI_PROTOCOL             (0                     ), // 0 is AXI4 Full
+    .C_NUM_ADDR_RANGES          (1                     ),
+    .C_M_AXI_BASE_ADDR          (64'H0000000000000000  ),
+    .C_M_AXI_ADDR_WIDTH         (32'H00000040          ),
+    .C_S_AXI_BASE_ID            (S_AXI_BASE_ID         ),
+    .C_S_AXI_THREAD_ID_WIDTH    (S_AXI_THREAD_ID_WIDTH ),
+    .C_AXI_SUPPORTS_USER_SIGNALS(0                     ),
+    .C_AXI_AWUSER_WIDTH         (1                     ),
+    .C_AXI_ARUSER_WIDTH         (1                     ),
+    .C_AXI_WUSER_WIDTH          (1                     ),
+    .C_AXI_RUSER_WIDTH          (1                     ),
+    .C_AXI_BUSER_WIDTH          (1                     ),
+    .C_M_AXI_WRITE_CONNECTIVITY (32'H0000000f          ),
+    .C_M_AXI_READ_CONNECTIVITY  (32'H0000000f          ),
+    .C_R_REGISTER               (1                     ),
+    .C_S_AXI_SINGLE_THREAD      ((slot_num_p*64)'(0)   ),
+    .C_S_AXI_WRITE_ACCEPTANCE   (S_AXI_WRITE_ACCEPTANCE),
+    .C_S_AXI_READ_ACCEPTANCE    (S_AXI_READ_ACCEPTANCE ),
+    .C_M_AXI_WRITE_ISSUING      (32'H00000001          ),
+    .C_M_AXI_READ_ISSUING       (32'H00000001          ),
+    .C_S_AXI_ARB_PRIORITY       ((slot_num_p*64)'(0)   ),
+    .C_M_AXI_SECURE             (32'H00000000          ),
+    .C_CONNECTIVITY_MODE        (0                     )  // shared access mode
   ) xbar (
     .aclk          (clk_i                     ),
     .aresetn       (~reset_i                  ),
