@@ -28,60 +28,58 @@ module axi4_mux #(
   bsg_axi4_mosi_mux_s s_axi4_par_i_cast;
   bsg_axi4_miso_mux_s s_axi4_par_o_cast;
 
-  logic [slot_num_p-1:0] space_holder;
+  for (genvar i = 0; i < slot_num_p; i++) begin : axi4_transpose
+    assign {s_axi4_par_i_cast.awid[i]
+      ,s_axi4_par_i_cast.awaddr[i]
+      ,s_axi4_par_i_cast.awlen[i]
+      ,s_axi4_par_i_cast.awsize[i]
+      ,s_axi4_par_i_cast.awburst[i]
+      ,s_axi4_par_i_cast.awlock[i]
+      ,s_axi4_par_i_cast.awcache[i]
+      ,s_axi4_par_i_cast.awprot[i]
+      ,s_axi4_par_i_cast.awqos[i]
+      ,s_axi4_par_i_cast.awregion[i]
+      ,s_axi4_par_i_cast.awvalid[i]
 
-  for (genvar i = 0; i < slot_num_p; i++) begin
-        assign {s_axi4_par_i_cast.awid[i]
-          ,s_axi4_par_i_cast.awaddr[i]
-          ,s_axi4_par_i_cast.awlen[i]
-          ,s_axi4_par_i_cast.awsize[i]
-          ,s_axi4_par_i_cast.awburst[i]
-          ,s_axi4_par_i_cast.awlock[i]
-          ,s_axi4_par_i_cast.awcache[i]
-          ,s_axi4_par_i_cast.awprot[i]
-          ,s_axi4_par_i_cast.awqos[i]
-          ,s_axi4_par_i_cast.awregion[i]
-          ,s_axi4_par_i_cast.awvalid[i]
+      ,s_axi4_par_i_cast.wdata[i]
+      ,s_axi4_par_i_cast.wstrb[i]
+      ,s_axi4_par_i_cast.wlast[i]
+      ,s_axi4_par_i_cast.wvalid[i]
 
-          ,s_axi4_par_i_cast.wdata[i]
-          ,s_axi4_par_i_cast.wstrb[i]
-          ,s_axi4_par_i_cast.wlast[i]
-          ,s_axi4_par_i_cast.wvalid[i]
+      ,s_axi4_par_i_cast.bready[i]
 
-          ,s_axi4_par_i_cast.bready[i]
+      ,s_axi4_par_i_cast.arid[i]
+      ,s_axi4_par_i_cast.araddr[i]
+      ,s_axi4_par_i_cast.arlen[i]
+      ,s_axi4_par_i_cast.arsize[i]
+      ,s_axi4_par_i_cast.arburst[i]
+      ,s_axi4_par_i_cast.arlock[i]
+      ,s_axi4_par_i_cast.arcache[i]
+      ,s_axi4_par_i_cast.arprot[i]
+      ,s_axi4_par_i_cast.arqos[i]
+      ,s_axi4_par_i_cast.arregion[i]
+      ,s_axi4_par_i_cast.arvalid[i]
 
-          ,s_axi4_par_i_cast.arid[i]
-          ,s_axi4_par_i_cast.araddr[i]
-          ,s_axi4_par_i_cast.arlen[i]
-          ,s_axi4_par_i_cast.arsize[i]
-          ,s_axi4_par_i_cast.arburst[i]
-          ,s_axi4_par_i_cast.arlock[i]
-          ,s_axi4_par_i_cast.arcache[i]
-          ,s_axi4_par_i_cast.arprot[i]
-          ,s_axi4_par_i_cast.arqos[i]
-          ,s_axi4_par_i_cast.arregion[i]
-          ,s_axi4_par_i_cast.arvalid[i]
+      ,s_axi4_par_i_cast.rready[i]
+    } = s_axi4_par_i[i];
 
-          ,s_axi4_par_i_cast.rready[i]
-        } = s_axi4_par_i[i];
+    assign s_axi4_par_o[i] = {
+      s_axi4_par_o_cast.awready[i]
+      ,s_axi4_par_o_cast.wready[i]
 
-        assign s_axi4_par_o[i] = {
-          s_axi4_par_o_cast.awready[i]
-          ,s_axi4_par_o_cast.wready[i]
+      ,s_axi4_par_o_cast.bid[i]
+      ,s_axi4_par_o_cast.bresp[i]
+      ,s_axi4_par_o_cast.bvalid[i]
 
-          ,s_axi4_par_o_cast.bid[i]
-          ,s_axi4_par_o_cast.bresp[i]
-          ,s_axi4_par_o_cast.bvalid[i]
+      ,s_axi4_par_o_cast.arready[i]
 
-          ,s_axi4_par_o_cast.arready[i]
-
-          ,s_axi4_par_o_cast.rid[i]
-          ,s_axi4_par_o_cast.rdata[i]
-          ,s_axi4_par_o_cast.rresp[i]
-          ,s_axi4_par_o_cast.rlast[i]
-          ,s_axi4_par_o_cast.rvalid[i]
-        };
-    end
+      ,s_axi4_par_o_cast.rid[i]
+      ,s_axi4_par_o_cast.rdata[i]
+      ,s_axi4_par_o_cast.rresp[i]
+      ,s_axi4_par_o_cast.rlast[i]
+      ,s_axi4_par_o_cast.rvalid[i]
+    };
+  end
 
   `declare_bsg_axi4_bus_s(1, id_width_p, addr_width_p, data_width_p, bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
   bsg_axi4_mosi_bus_s m_axi4_ser_o_cast;
