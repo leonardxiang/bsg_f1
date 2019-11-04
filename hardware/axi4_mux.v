@@ -91,9 +91,9 @@ module axi4_mux #(
   assign m_axi4_ser_i_cast = m_axi4_ser_i;
 
 
-  localparam [slot_num_p*64-1:0] S_AXI_THREAD_ID_WIDTH = {slot_num_p{64'd4}};
-  localparam [slot_num_p*64-1:0] S_AXI_WRITE_ACCEPTANCE = {slot_num_p{64'd1}};
-  localparam [slot_num_p*64-1:0] S_AXI_READ_ACCEPTANCE = {slot_num_p{64'd1}};
+  localparam [slot_num_p*32-1:0] S_AXI_THREAD_ID_WIDTH = {slot_num_p{32'd4}};
+  localparam [slot_num_p*32-1:0] S_AXI_WRITE_ACCEPTANCE = {slot_num_p{32'd1}};
+  localparam [slot_num_p*32-1:0] S_AXI_READ_ACCEPTANCE = {slot_num_p{32'd1}};
 
   // synopsys translate_off
   initial begin
@@ -102,25 +102,26 @@ module axi4_mux #(
   end
   // synopsys translate_on
 
-  `define LSHIFT_ADDITION(ls, val) + (ls << val)
+  `define LSHIFT_ADDITION(ls, val) + (val << ls)
 
-  parameter S_AXI_BASE_ID = (slot_num_p*64)'(
-    `LSHIFT_ADDITION(64*0, 0)
-    `LSHIFT_ADDITION(64*1, 1)
-    `LSHIFT_ADDITION(64*2, 2)
-    `LSHIFT_ADDITION(64*3, 3)
-    `LSHIFT_ADDITION(64*4, 4)
-    `LSHIFT_ADDITION(64*5, 5)
-    `LSHIFT_ADDITION(64*6, 6)
-    `LSHIFT_ADDITION(64*7, 7)
-    `LSHIFT_ADDITION(64*8, 8)
-    `LSHIFT_ADDITION(64*9, 9)
-    `LSHIFT_ADDITION(64*10, 10)
-    `LSHIFT_ADDITION(64*11, 11)
-    `LSHIFT_ADDITION(64*12, 12)
-    `LSHIFT_ADDITION(64*13, 13)
-    `LSHIFT_ADDITION(64*14, 14)
-    `LSHIFT_ADDITION(64*15, 15)
+  parameter S_AXI_BASE_ID = (slot_num_p*32)'(
+     0
+    `LSHIFT_ADDITION(32*0, 0)
+    `LSHIFT_ADDITION(32*1, 1)
+    `LSHIFT_ADDITION(32*2, 2)
+    `LSHIFT_ADDITION(32*3, 3)
+    `LSHIFT_ADDITION(32*4, 4)
+    `LSHIFT_ADDITION(32*5, 5)
+    `LSHIFT_ADDITION(32*6, 6)
+    `LSHIFT_ADDITION(32*7, 7)
+    `LSHIFT_ADDITION(32*8, 8)
+    `LSHIFT_ADDITION(32*9, 9)
+    `LSHIFT_ADDITION(32*10, 10)
+    `LSHIFT_ADDITION(32*11, 11)
+    `LSHIFT_ADDITION(32*12, 12)
+    `LSHIFT_ADDITION(32*13, 13)
+    `LSHIFT_ADDITION(32*14, 14)
+    `LSHIFT_ADDITION(32*15, 15)
   );
 
   axi_crossbar_v2_1_20_axi_crossbar #(
@@ -145,12 +146,12 @@ module axi4_mux #(
     .C_M_AXI_WRITE_CONNECTIVITY (32'H0000000f          ),
     .C_M_AXI_READ_CONNECTIVITY  (32'H0000000f          ),
     .C_R_REGISTER               (1                     ),
-    .C_S_AXI_SINGLE_THREAD      ((slot_num_p*64)'(0)   ),
+    .C_S_AXI_SINGLE_THREAD      ((slot_num_p*32)'(0)   ),
     .C_S_AXI_WRITE_ACCEPTANCE   (S_AXI_WRITE_ACCEPTANCE),
     .C_S_AXI_READ_ACCEPTANCE    (S_AXI_READ_ACCEPTANCE ),
     .C_M_AXI_WRITE_ISSUING      (32'H00000001          ),
     .C_M_AXI_READ_ISSUING       (32'H00000001          ),
-    .C_S_AXI_ARB_PRIORITY       ((slot_num_p*64)'(0)   ),
+    .C_S_AXI_ARB_PRIORITY       ((slot_num_p*32)'(0)   ),
     .C_M_AXI_SECURE             (32'H00000000          ),
     .C_CONNECTIVITY_MODE        (0                     )  // shared access mode
   ) xbar (

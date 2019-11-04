@@ -77,6 +77,7 @@ BSG_MANYCORE_COMMIT_ID ?= feedcafe
 BSG_F1_COMMIT_ID       ?= 42c0ffee
 FPGA_IMAGE_VERSION     ?= 0.0.0
 
+VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_mem_cfg_pkg.v
 VHEADERS += $(HARDWARE_PATH)/f1_parameters.vh
 VSOURCES += $(HARDWARE_PATH)/cl_manycore_pkg.v
 VHEADERS += $(HARDWARE_PATH)/cl_manycore_defines.vh
@@ -99,7 +100,7 @@ VSOURCES += $(BASEJUMP_STL_DIR)/bsg_cache/bsg_cache_to_axi.v
 # but transformed into a tool-specific syntax where necesssary.
 VINCLUDES += $(HARDWARE_PATH)
 
-VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_mem_cfg_pkg.v
+
 VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_configuration.v
 VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_wrapper.v
 
