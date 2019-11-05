@@ -43,6 +43,8 @@ $(USER_CLEAN_RULES):
 	BSG_MACHINE_PATH=$(BSG_MACHINE_PATH) \
 	$(MAKE) -C $(CUDALITE_SRC_PATH)/$(subst .clean,,$(subst test_,,$@)) clean
 
+$(CUDALITE_SRC_PATH)/memread_reg/main.riscv: TILE_GROUP_DIM_X=1
+$(CUDALITE_SRC_PATH)/memread_reg/main.riscv: TILE_GROUP_DIM_Y=1
 $(CUDALITE_SRC_PATH)/%/main.riscv: $(CL_DIR)/Makefile.machine.include
 	CL_DIR=$(CL_DIR) \
 	BSG_MANYCORE_DIR=$(BSG_MANYCORE_DIR) \
@@ -53,3 +55,4 @@ $(CUDALITE_SRC_PATH)/%/main.riscv: $(CL_DIR)/Makefile.machine.include
 	bsg_tiles_X=$(TILE_GROUP_DIM_X) \
 	bsg_tiles_Y=$(TILE_GROUP_DIM_Y) \
 	$(MAKE) -C $(dir $@) clean $(notdir $@)
+
