@@ -93,6 +93,8 @@ module axi4_mux #(
   localparam [slot_num_p*32-1:0] S_AXI_THREAD_ID_WIDTH = {slot_num_p{32'd4}};
   localparam [slot_num_p*32-1:0] S_AXI_WRITE_ACCEPTANCE = {slot_num_p{32'd1}};
   localparam [slot_num_p*32-1:0] S_AXI_READ_ACCEPTANCE = {slot_num_p{32'd1}};
+  localparam [31:0] M_AXI_WRITE_CONNECTIVITY = 32'({slot_num_p{1'b1}}); 
+  localparam [31:0] M_AXI_READ_CONNECTIVITY = 32'({slot_num_p{1'b1}});
 
   // synopsys translate_off
   initial begin
@@ -124,35 +126,35 @@ module axi4_mux #(
   );
 
   axi_crossbar_v2_1_20_axi_crossbar #(
-    .C_FAMILY                   (device_family         ),
-    .C_NUM_SLAVE_SLOTS          (slot_num_p            ),
-    .C_NUM_MASTER_SLOTS         (1                     ),
-    .C_AXI_ID_WIDTH             (id_width_p            ),
-    .C_AXI_ADDR_WIDTH           (addr_width_p          ),
-    .C_AXI_DATA_WIDTH           (data_width_p          ),
-    .C_AXI_PROTOCOL             (0                     ), // 0 is AXI4 Full
-    .C_NUM_ADDR_RANGES          (1                     ),
-    .C_M_AXI_BASE_ADDR          (64'H0000000000000000  ),
-    .C_M_AXI_ADDR_WIDTH         (32'H00000040          ),
-    .C_S_AXI_BASE_ID            (S_AXI_BASE_ID         ),
-    .C_S_AXI_THREAD_ID_WIDTH    (S_AXI_THREAD_ID_WIDTH ),
-    .C_AXI_SUPPORTS_USER_SIGNALS(0                     ),
-    .C_AXI_AWUSER_WIDTH         (1                     ),
-    .C_AXI_ARUSER_WIDTH         (1                     ),
-    .C_AXI_WUSER_WIDTH          (1                     ),
-    .C_AXI_RUSER_WIDTH          (1                     ),
-    .C_AXI_BUSER_WIDTH          (1                     ),
-    .C_M_AXI_WRITE_CONNECTIVITY (32'H0000000f          ),
-    .C_M_AXI_READ_CONNECTIVITY  (32'H0000000f          ),
-    .C_R_REGISTER               (1                     ),
-    .C_S_AXI_SINGLE_THREAD      ((slot_num_p*32)'(0)   ),
-    .C_S_AXI_WRITE_ACCEPTANCE   (S_AXI_WRITE_ACCEPTANCE),
-    .C_S_AXI_READ_ACCEPTANCE    (S_AXI_READ_ACCEPTANCE ),
-    .C_M_AXI_WRITE_ISSUING      (32'H00000001          ),
-    .C_M_AXI_READ_ISSUING       (32'H00000001          ),
-    .C_S_AXI_ARB_PRIORITY       ((slot_num_p*32)'(0)   ),
-    .C_M_AXI_SECURE             (32'H00000000          ),
-    .C_CONNECTIVITY_MODE        (0                     )  // shared access mode
+    .C_FAMILY                   (device_family           ),
+    .C_NUM_SLAVE_SLOTS          (slot_num_p              ),
+    .C_NUM_MASTER_SLOTS         (1                       ),
+    .C_AXI_ID_WIDTH             (id_width_p              ),
+    .C_AXI_ADDR_WIDTH           (addr_width_p            ),
+    .C_AXI_DATA_WIDTH           (data_width_p            ),
+    .C_AXI_PROTOCOL             (0                       ), // 0 is AXI4 Full
+    .C_NUM_ADDR_RANGES          (1                       ),
+    .C_M_AXI_BASE_ADDR          (64'H0000000000000000    ),
+    .C_M_AXI_ADDR_WIDTH         (32'H00000040            ),
+    .C_S_AXI_BASE_ID            (S_AXI_BASE_ID           ),
+    .C_S_AXI_THREAD_ID_WIDTH    (S_AXI_THREAD_ID_WIDTH   ),
+    .C_AXI_SUPPORTS_USER_SIGNALS(0                       ),
+    .C_AXI_AWUSER_WIDTH         (1                       ),
+    .C_AXI_ARUSER_WIDTH         (1                       ),
+    .C_AXI_WUSER_WIDTH          (1                       ),
+    .C_AXI_RUSER_WIDTH          (1                       ),
+    .C_AXI_BUSER_WIDTH          (1                       ),
+    .C_M_AXI_WRITE_CONNECTIVITY (M_AXI_WRITE_CONNECTIVITY),
+    .C_M_AXI_READ_CONNECTIVITY  (M_AXI_READ_CONNECTIVITY ),
+    .C_R_REGISTER               (1                       ),
+    .C_S_AXI_SINGLE_THREAD      ((slot_num_p*32)'(0)     ),
+    .C_S_AXI_WRITE_ACCEPTANCE   (S_AXI_WRITE_ACCEPTANCE  ),
+    .C_S_AXI_READ_ACCEPTANCE    (S_AXI_READ_ACCEPTANCE   ),
+    .C_M_AXI_WRITE_ISSUING      (32'H00000001            ),
+    .C_M_AXI_READ_ISSUING       (32'H00000001            ),
+    .C_S_AXI_ARB_PRIORITY       ((slot_num_p*32)'(0)     ),
+    .C_M_AXI_SECURE             (32'H00000000            ),
+    .C_CONNECTIVITY_MODE        (0                       )  // shared access mode
   ) xbar (
     .aclk          (clk_i                     ),
     .aresetn       (~reset_i                  ),

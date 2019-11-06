@@ -342,9 +342,9 @@ module cl_manycore
 
   // bladerunner wrapper
   localparam num_axi_slot_lp = (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
-                               mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
-                               mem_cfg_p == e_vcache_blocking_axi4_hbm) ?
-                              num_tiles_x_p : 1;
+                                mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
+                                mem_cfg_p == e_vcache_blocking_axi4_hbm) ?
+                                num_tiles_x_p : 1;
 
   bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] mc_axi4_cache_lo;
   bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] mc_axi4_cache_li;
