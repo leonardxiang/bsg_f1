@@ -2,7 +2,7 @@
 *  axi4_clock_converter.v
 *
 */
-
+`define USE_IP_GEN
 `include "bsg_axi_bus_pkg.vh"
 
 module axi4_clock_converter #(

@@ -346,8 +346,8 @@ module cl_manycore
                                mem_cfg_p == e_vcache_blocking_axi4_hbm) ?
                               num_tiles_x_p : 1;
 
-  bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_lo;
-  bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_li;
+  bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] mc_axi4_cache_lo;
+  bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] mc_axi4_cache_li;
 
   // hb_manycore
   bsg_bladerunner_wrapper #(.num_axi_slot_p(num_axi_slot_lp)) hb_mc_wrapper (
@@ -359,8 +359,8 @@ module cl_manycore
     .s_axil_bus_i(s_axil_mc_li    ),
     .s_axil_bus_o(s_axil_mc_lo    ),
     // AXI4 Master
-    .m_axi4_bus_o(axi4_mc_cols_lo ),
-    .m_axi4_bus_i(axi4_mc_cols_li )
+    .m_axi4_bus_o(mc_axi4_cache_lo),
+    .m_axi4_bus_i(mc_axi4_cache_li)
   );
 
 
@@ -370,8 +370,8 @@ module cl_manycore
   if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
       mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv3_axi4_c
 
-    assign m_axi4_mem_lo = axi4_mc_cols_lo[0];
-    assign axi4_mc_cols_li[0] = m_axi4_mem_li;
+    assign m_axi4_mem_lo = mc_axi4_cache_lo[0];
+    assign mc_axi4_cache_li[0] = m_axi4_mem_li;
 
   end : lv3_axi4_c
 
@@ -380,73 +380,68 @@ module cl_manycore
            mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
            mem_cfg_p == e_vcache_blocking_axi4_hbm) begin : lv3_xbar_c
 
-    bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] s_axi4_dw_dn_li, m_axi4_dw_up_lo;
-    bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] s_axi4_dw_dn_lo, m_axi4_dw_up_li;
+    bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] mc_axi4_cols_lo;
+    bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] mc_axi4_cols_li;
 
-    bsg_axi4_h_mosi_bus_s [num_axi_slot_lp-1:0] s_axi4_reg_buf_li, m_axi4_reg_buf_lo;
-    bsg_axi4_h_miso_bus_s [num_axi_slot_lp-1:0] s_axi4_reg_buf_lo, m_axi4_reg_buf_li;
+    // 1.0 BYPASS mc axi4
+    assign mc_axi4_cols_lo = mc_axi4_cache_lo;
+    assign mc_axi4_cache_li = mc_axi4_cols_li;
 
-    // assign s_axi4_dw_dn_li = axi4_mc_cols_lo;
-    // assign axi4_mc_cols_li = s_axi4_dw_dn_lo;
+    // 2.0 mc data pipeline
 
-    always_comb begin
-      m_axi4_dw_up_lo = axi4_mc_cols_lo;
-      axi4_mc_cols_li = m_axi4_dw_up_li;
-    end
+    // bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] s_axi4_dw_dn_li, m_axi4_dw_up_lo;
+    // bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] s_axi4_dw_dn_lo, m_axi4_dw_up_li;
 
-    // assign m_axi4_dw_up_lo = axi4_mc_cols_lo;
-    // assign axi4_mc_cols_li = m_axi4_dw_up_li;
+    // for (genvar i = 0; i < num_axi_slot_lp; i++) begin : axi_data_pip
 
-    for (genvar i = 0; i < num_axi_slot_lp; i++) begin : axi_data_pip
+    //   assign m_axi4_dw_up_lo[i] = s_axi4_dw_dn_li[i];
+    //   assign s_axi4_dw_dn_lo[i] = m_axi4_dw_up_li[i];
 
-      // assign m_axi4_dw_up_lo[i] = s_axi4_dw_dn_li[i];
-      // assign s_axi4_dw_dn_lo[i] = m_axi4_dw_up_li[i];
+    //   axi4_data_width_converter #(
+    //     .id_width_p    (axi_id_width_p    ),
+    //     .addr_width_p  (axi_addr_width_p  ),
+    //     .s_data_width_p(axi_data_width_p  ),
+    //     .m_data_width_p(axi_data_width_p*2),
+    //     .device_family ("virtexuplus"     )
+    //   ) dw_cvt_dn (
+    //     .clk_i   (core_clk            ),
+    //     .reset_i (core_reset          ),
+    //     .s_axi4_i(mc_axi4_cache_lo[i]   ),
+    //     .s_axi4_o(mc_axi4_cache_li[i]   ),
+    //     .m_axi4_o(m_axi4_dw_up_lo[i]),
+    //     .m_axi4_i(m_axi4_dw_up_li[i])
+    //   );
 
-      // axi4_data_width_converter #(
-      //   .id_width_p    (axi_id_width_p    ),
-      //   .addr_width_p  (axi_addr_width_p  ),
-      //   .s_data_width_p(axi_data_width_p  ),
-      //   .m_data_width_p(axi_data_width_p/2),
-      //   .device_family ("virtexuplus"     )
-      // ) dw_cvt_dn (
-      //   .clk_i   (core_clk            ),
-      //   .reset_i (core_reset          ),
-      //   .s_axi4_i(s_axi4_dw_dn_li[i]   ),
-      //   .s_axi4_o(s_axi4_dw_dn_lo[i]   ),
-      //   .m_axi4_o(s_axi4_reg_buf_li[i]),
-      //   .m_axi4_i(s_axi4_reg_buf_lo[i])
-      // );
+    //   axi4_register_slice #(
+    //     .id_width_p   (axi_id_width_p    ),
+    //     .addr_width_p (axi_addr_width_p  ),
+    //     .data_width_p (axi_data_width_p*2),
+    //     .device_family("virtexuplus"     )
+    //   ) axi4_reg_buf (
+    //     .clk_i   (core_clk            ),
+    //     .reset_i (core_reset          ),
+    //     .s_axi4_i(m_axi4_dw_up_lo[i]),
+    //     .s_axi4_o(m_axi4_dw_up_li[i]),
+    //     .m_axi4_o(s_axi4_dw_dn_li[i]),
+    //     .m_axi4_i(s_axi4_dw_dn_lo[i])
+    //   );
 
-      // axi4_register_slice #(
-      //   .id_width_p   (axi_id_width_p    ),
-      //   .addr_width_p (axi_addr_width_p  ),
-      //   .data_width_p (axi_data_width_p/2),
-      //   .device_family("virtexuplus"     )
-      // ) axi4_reg_buf (
-      //   .clk_i   (core_clk            ),
-      //   .reset_i (core_reset          ),
-      //   .s_axi4_i(s_axi4_reg_buf_li[i]),
-      //   .s_axi4_o(s_axi4_reg_buf_lo[i]),
-      //   .m_axi4_o(m_axi4_reg_buf_lo[i]),
-      //   .m_axi4_i(m_axi4_reg_buf_li[i])
-      // );
+    //   axi4_data_width_converter #(
+    //     .id_width_p    (axi_id_width_p    ),
+    //     .addr_width_p  (axi_addr_width_p  ),
+    //     .s_data_width_p(axi_data_width_p*2),
+    //     .m_data_width_p(axi_data_width_p  ),
+    //     .device_family ("virtexuplus"     )
+    //   ) dw_cvt_up (
+    //     .clk_i   (core_clk            ),
+    //     .reset_i (core_reset          ),
+    //     .s_axi4_i(s_axi4_dw_dn_li[i]),
+    //     .s_axi4_o(s_axi4_dw_dn_lo[i]),
+    //     .m_axi4_o(mc_axi4_cols_lo[i]   ),
+    //     .m_axi4_i(mc_axi4_cols_li[i]   )
+    //   );
 
-      // axi4_data_width_converter #(
-      //   .id_width_p    (axi_id_width_p    ),
-      //   .addr_width_p  (axi_addr_width_p  ),
-      //   .s_data_width_p(axi_data_width_p/2),
-      //   .m_data_width_p(axi_data_width_p  ),
-      //   .device_family ("virtexuplus"     )
-      // ) dw_cvt_up (
-      //   .clk_i   (core_clk            ),
-      //   .reset_i (core_reset          ),
-      //   .s_axi4_i(m_axi4_reg_buf_lo[i]),
-      //   .s_axi4_o(m_axi4_reg_buf_li[i]),
-      //   .m_axi4_o(m_axi4_dw_up_lo[i]   ),
-      //   .m_axi4_i(m_axi4_dw_up_li[i]   )
-      // );
-
-  end : axi_data_pip
+    // end : axi_data_pip
 
     axi4_mux #(
       .slot_num_p  (num_axi_slot_lp ),
@@ -454,12 +449,12 @@ module cl_manycore
       .addr_width_p(axi_addr_width_p),
       .data_width_p(axi_data_width_p)
     ) axi4_xbar_mux (
-      .clk_i       (core_clk      ),
-      .reset_i     (core_reset    ),
-      .s_axi4_par_i(m_axi4_dw_up_lo),
-      .s_axi4_par_o(m_axi4_dw_up_li),
-      .m_axi4_ser_o(m_axi4_mem_lo ),
-      .m_axi4_ser_i(m_axi4_mem_li )
+      .clk_i       (core_clk       ),
+      .reset_i     (core_reset     ),
+      .s_axi4_par_i(mc_axi4_cols_lo),
+      .s_axi4_par_o(mc_axi4_cols_li),
+      .m_axi4_ser_o(m_axi4_mem_lo  ),
+      .m_axi4_ser_i(m_axi4_mem_li  )
     );
 
   end : lv3_xbar_c
