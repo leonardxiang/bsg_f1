@@ -145,7 +145,7 @@ include $(CL_DIR)/Makefile.machine.include
 # Model. The default is e_vcache_blocking_axi4_f1_model uses an
 # (infinite) AXI memory model with low (1-2 cycle) latency in
 # simulation.
-ifeq ($(CL_MANYCORE_MEM_CFG), $(filter $(CL_MANYCORE_MEM_CFG),e_vcache_blocking_axi4_f1_model e_vcache_blocking_axi4_xbar_model))
+ifeq ($(CL_MANYCORE_MEM_CFG), $(filter $(CL_MANYCORE_MEM_CFG),e_vcache_blocking_axi4_f1_model e_vcache_blocking_axi4_xbar_model, e_vcache_blocking_axi4_hbm))
 VDEFINES   += AXI_MEMORY_MODEL=1
 VDEFINES   += ECC_DIRECT_EN
 VDEFINES   += RND_ECC_EN

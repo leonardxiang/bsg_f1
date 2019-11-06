@@ -77,15 +77,6 @@ BSG_MANYCORE_COMMIT_ID ?= feedcafe
 BSG_F1_COMMIT_ID       ?= 42c0ffee
 FPGA_IMAGE_VERSION     ?= 0.0.0
 
-VHEADERS += $(HARDWARE_PATH)/f1_parameters.vh
-VSOURCES += $(HARDWARE_PATH)/cl_manycore_pkg.v
-VHEADERS += $(HARDWARE_PATH)/cl_manycore_defines.vh
-VHEADERS += $(HARDWARE_PATH)/cl_id_defines.vh
-
-VHEADERS += $(HARDWARE_PATH)/axil_to_mcl.vh
-VHEADERS += $(HARDWARE_PATH)/bsg_axi_bus_pkg.vh
-VHEADERS += $(HARDWARE_PATH)/bsg_bladerunner_rom_pkg.vh
-
 # The manycore architecture sources are defined in arch_filelist.mk. The
 # unsynthesizable simulation sources (for tracing, etc) are defined in
 # sim_filelist.mk. Each file adds to VSOURCES and VINCLUDES and depends on
@@ -99,7 +90,16 @@ VSOURCES += $(BASEJUMP_STL_DIR)/bsg_cache/bsg_cache_to_axi.v
 # but transformed into a tool-specific syntax where necesssary.
 VINCLUDES += $(HARDWARE_PATH)
 
+VHEADERS += $(HARDWARE_PATH)/f1_parameters.vh
+VHEADERS += $(HARDWARE_PATH)/cl_manycore_defines.vh
+VHEADERS += $(HARDWARE_PATH)/cl_id_defines.vh
 VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_mem_cfg_pkg.v
+VSOURCES += $(HARDWARE_PATH)/cl_manycore_pkg.v
+
+VHEADERS += $(HARDWARE_PATH)/axil_to_mcl.vh
+VHEADERS += $(HARDWARE_PATH)/bsg_axi_bus_pkg.vh
+VHEADERS += $(HARDWARE_PATH)/bsg_bladerunner_rom_pkg.vh
+
 VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_configuration.v
 VSOURCES += $(HARDWARE_PATH)/bsg_bladerunner_wrapper.v
 
@@ -111,6 +111,9 @@ VSOURCES += $(CL_DIR)/hardware/bsg_bladerunner_rom.v
 VSOURCES += $(CL_DIR)/hardware/axil_to_mcl.v
 VSOURCES += $(CL_DIR)/hardware/s_axil_mcl_adapter.v
 VSOURCES += $(CL_DIR)/hardware/axil_to_mem.sv
+VSOURCES += $(CL_DIR)/hardware/axi4_register_slice.v
+VSOURCES += $(CL_DIR)/hardware/axi4_clock_converter.v
+VSOURCES += $(CL_DIR)/hardware/axi4_data_width_converter.v
 
 $(HARDWARE_PATH)/bsg_bladerunner_configuration.rom: $(CL_DIR)/Makefile.machine.include
 	python $(HARDWARE_PATH)/create_bladerunner_rom.py \

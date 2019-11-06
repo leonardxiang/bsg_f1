@@ -10,6 +10,7 @@ module axi4_mux #(
   , parameter id_width_p = "inv"
   , parameter addr_width_p = "inv"
   , parameter data_width_p = "inv"
+  , parameter device_family = "virtexuplus"
   , localparam axi4_mosi_bus_width_lp = `bsg_axi4_mosi_bus_width(1, id_width_p, addr_width_p, data_width_p)
   , localparam axi4_miso_bus_width_lp = `bsg_axi4_miso_bus_width(1, id_width_p, addr_width_p, data_width_p)
 ) (
@@ -123,7 +124,7 @@ module axi4_mux #(
   );
 
   axi_crossbar_v2_1_20_axi_crossbar #(
-    .C_FAMILY                   ("virtexuplus"         ),
+    .C_FAMILY                   (device_family         ),
     .C_NUM_SLAVE_SLOTS          (slot_num_p            ),
     .C_NUM_MASTER_SLOTS         (1                     ),
     .C_AXI_ID_WIDTH             (id_width_p            ),

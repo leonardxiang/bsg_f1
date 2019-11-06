@@ -154,122 +154,139 @@ module cl_manycore
    logic        m_axil_ocl_rready;
 
    //--------------------------------------------
-   // AXI4 signals for the Manycore
-   //---------------------------------------------
-   logic [5:0]  m_axi4_manycore_awid;
-   logic [63:0] m_axi4_manycore_awaddr;
-   logic [7:0]  m_axi4_manycore_awlen;
-   logic [2:0]  m_axi4_manycore_awsize;
-   logic [1:0]  m_axi4_manycore_awburst;
-   logic [0:0]  m_axi4_manycore_awlock;
-   logic [3:0]  m_axi4_manycore_awcache;
-   logic [2:0]  m_axi4_manycore_awprot;
-   logic [3:0]  m_axi4_manycore_awregion;
-   logic [3:0]  m_axi4_manycore_awqos;
-   logic        m_axi4_manycore_awvalid;
-   logic        m_axi4_manycore_awready;
-
-   logic [511:0] m_axi4_manycore_wdata;
-   logic [63:0]  m_axi4_manycore_wstrb;
-   logic         m_axi4_manycore_wlast;
-   logic         m_axi4_manycore_wvalid;
-   logic         m_axi4_manycore_wready;
-
-   logic [5:0]   m_axi4_manycore_bid;
-   logic [1:0]   m_axi4_manycore_bresp;
-   logic         m_axi4_manycore_bvalid;
-   logic         m_axi4_manycore_bready;
-
-   logic [5:0]   m_axi4_manycore_arid;
-   logic [63:0]  m_axi4_manycore_araddr;
-   logic [7:0]   m_axi4_manycore_arlen;
-   logic [2:0]   m_axi4_manycore_arsize;
-   logic [1:0]   m_axi4_manycore_arburst;
-   logic [0:0]   m_axi4_manycore_arlock;
-   logic [3:0]   m_axi4_manycore_arcache;
-   logic [2:0]   m_axi4_manycore_arprot;
-   logic [3:0]   m_axi4_manycore_arregion;
-   logic [3:0]   m_axi4_manycore_arqos;
-   logic         m_axi4_manycore_arvalid;
-   logic         m_axi4_manycore_arready;
-
-   logic [5:0]   m_axi4_manycore_rid;
-   logic [511:0] m_axi4_manycore_rdata;
-   logic [1:0]   m_axi4_manycore_rresp;
-   logic         m_axi4_manycore_rlast;
-   logic         m_axi4_manycore_rvalid;
-   logic         m_axi4_manycore_rready;
-
-
-   //--------------------------------------------
    // AXI-Lite OCL System
    //---------------------------------------------
    axi_register_slice_light
-     AXIL_OCL_REG_SLC
-       (
-        .aclk          (clk_main_a0),
-        .aresetn       (rst_main_n_sync),
-        .s_axi_awaddr  (sh_ocl_awaddr),
-        .s_axi_awprot  (3'h0),
-        .s_axi_awvalid (sh_ocl_awvalid),
-        .s_axi_awready (ocl_sh_awready),
-        .s_axi_wdata   (sh_ocl_wdata),
-        .s_axi_wstrb   (sh_ocl_wstrb),
-        .s_axi_wvalid  (sh_ocl_wvalid),
-        .s_axi_wready  (ocl_sh_wready),
-        .s_axi_bresp   (ocl_sh_bresp),
-        .s_axi_bvalid  (ocl_sh_bvalid),
-        .s_axi_bready  (sh_ocl_bready),
-        .s_axi_araddr  (sh_ocl_araddr),
-        .s_axi_arvalid (sh_ocl_arvalid),
-        .s_axi_arready (ocl_sh_arready),
-        .s_axi_rdata   (ocl_sh_rdata),
-        .s_axi_rresp   (ocl_sh_rresp),
-        .s_axi_rvalid  (ocl_sh_rvalid),
-        .s_axi_rready  (sh_ocl_rready),
-        .m_axi_awaddr  (m_axil_ocl_awaddr),
-        .m_axi_awprot  (),
-        .m_axi_awvalid (m_axil_ocl_awvalid),
-        .m_axi_awready (m_axil_ocl_awready),
-        .m_axi_wdata   (m_axil_ocl_wdata),
-        .m_axi_wstrb   (m_axil_ocl_wstrb),
-        .m_axi_wvalid  (m_axil_ocl_wvalid),
-        .m_axi_wready  (m_axil_ocl_wready),
-        .m_axi_bresp   (m_axil_ocl_bresp),
-        .m_axi_bvalid  (m_axil_ocl_bvalid),
-        .m_axi_bready  (m_axil_ocl_bready),
-        .m_axi_araddr  (m_axil_ocl_araddr),
-        .m_axi_arvalid (m_axil_ocl_arvalid),
-        .m_axi_arready (m_axil_ocl_arready),
-        .m_axi_rdata   (m_axil_ocl_rdata),
-        .m_axi_rresp   (m_axil_ocl_rresp),
-        .m_axi_rvalid  (m_axil_ocl_rvalid),
-        .m_axi_rready  (m_axil_ocl_rready)
-        );
+   AXIL_OCL_REG_SLC
+     (
+      .aclk          (clk_main_a0),
+      .aresetn       (rst_main_n_sync),
+      .s_axi_awaddr  (sh_ocl_awaddr),
+      .s_axi_awprot  (3'h0),
+      .s_axi_awvalid (sh_ocl_awvalid),
+      .s_axi_awready (ocl_sh_awready),
+      .s_axi_wdata   (sh_ocl_wdata),
+      .s_axi_wstrb   (sh_ocl_wstrb),
+      .s_axi_wvalid  (sh_ocl_wvalid),
+      .s_axi_wready  (ocl_sh_wready),
+      .s_axi_bresp   (ocl_sh_bresp),
+      .s_axi_bvalid  (ocl_sh_bvalid),
+      .s_axi_bready  (sh_ocl_bready),
+      .s_axi_araddr  (sh_ocl_araddr),
+      .s_axi_arvalid (sh_ocl_arvalid),
+      .s_axi_arready (ocl_sh_arready),
+      .s_axi_rdata   (ocl_sh_rdata),
+      .s_axi_rresp   (ocl_sh_rresp),
+      .s_axi_rvalid  (ocl_sh_rvalid),
+      .s_axi_rready  (sh_ocl_rready),
+      .m_axi_awaddr  (m_axil_ocl_awaddr),
+      .m_axi_awprot  (),
+      .m_axi_awvalid (m_axil_ocl_awvalid),
+      .m_axi_awready (m_axil_ocl_awready),
+      .m_axi_wdata   (m_axil_ocl_wdata),
+      .m_axi_wstrb   (m_axil_ocl_wstrb),
+      .m_axi_wvalid  (m_axil_ocl_wvalid),
+      .m_axi_wready  (m_axil_ocl_wready),
+      .m_axi_bresp   (m_axil_ocl_bresp),
+      .m_axi_bvalid  (m_axil_ocl_bvalid),
+      .m_axi_bready  (m_axil_ocl_bready),
+      .m_axi_araddr  (m_axil_ocl_araddr),
+      .m_axi_arvalid (m_axil_ocl_arvalid),
+      .m_axi_arready (m_axil_ocl_arready),
+      .m_axi_rdata   (m_axil_ocl_rdata),
+      .m_axi_rresp   (m_axil_ocl_rresp),
+      .m_axi_rvalid  (m_axil_ocl_rvalid),
+      .m_axi_rready  (m_axil_ocl_rready)
+      );
 
   `include "bsg_axi_bus_pkg.vh"
 
-    `declare_bsg_axil_bus_s(1, bsg_axil_mosi_bus_s, bsg_axil_miso_bus_s);
-    bsg_axil_mosi_bus_s s_axil_mc_li;
-    bsg_axil_miso_bus_s s_axil_mc_lo;
+  `declare_bsg_axil_bus_s(1, bsg_axil_mosi_bus_s, bsg_axil_miso_bus_s);
+  bsg_axil_mosi_bus_s s_axil_mc_li;
+  bsg_axil_miso_bus_s s_axil_mc_lo;
 
-    assign s_axil_mc_li.awaddr  = m_axil_ocl_awaddr;
-    assign s_axil_mc_li.awvalid = m_axil_ocl_awvalid;
-    assign m_axil_ocl_awready   = s_axil_mc_lo.awready;
-    assign s_axil_mc_li.wdata   = m_axil_ocl_wdata;
-    assign s_axil_mc_li.wstrb   = m_axil_ocl_wstrb;
-    assign s_axil_mc_li.wvalid  = m_axil_ocl_wvalid;
-    assign m_axil_ocl_wready    = s_axil_mc_lo.wready;
-    assign m_axil_ocl_bresp     = s_axil_mc_lo.bresp ;
-    assign m_axil_ocl_bvalid    = s_axil_mc_lo.bvalid;
-    assign s_axil_mc_li.bready  = m_axil_ocl_bready;
-    assign s_axil_mc_li.araddr  = m_axil_ocl_araddr;
-    assign s_axil_mc_li.arvalid = m_axil_ocl_arvalid;
-    assign m_axil_ocl_arready   = s_axil_mc_lo.arready;
-    assign m_axil_ocl_rdata     = s_axil_mc_lo.rdata ;
-    assign m_axil_ocl_rresp     = s_axil_mc_lo.rresp ;
-    assign m_axil_ocl_rvalid    = s_axil_mc_lo.rvalid;
-    assign s_axil_mc_li.rready  = m_axil_ocl_rready;
+  assign s_axil_mc_li.awaddr  = m_axil_ocl_awaddr;
+  assign s_axil_mc_li.awvalid = m_axil_ocl_awvalid;
+  assign m_axil_ocl_awready   = s_axil_mc_lo.awready;
+  assign s_axil_mc_li.wdata   = m_axil_ocl_wdata;
+  assign s_axil_mc_li.wstrb   = m_axil_ocl_wstrb;
+  assign s_axil_mc_li.wvalid  = m_axil_ocl_wvalid;
+  assign m_axil_ocl_wready    = s_axil_mc_lo.wready;
+  assign m_axil_ocl_bresp     = s_axil_mc_lo.bresp ;
+  assign m_axil_ocl_bvalid    = s_axil_mc_lo.bvalid;
+  assign s_axil_mc_li.bready  = m_axil_ocl_bready;
+  assign s_axil_mc_li.araddr  = m_axil_ocl_araddr;
+  assign s_axil_mc_li.arvalid = m_axil_ocl_arvalid;
+  assign m_axil_ocl_arready   = s_axil_mc_lo.arready;
+  assign m_axil_ocl_rdata     = s_axil_mc_lo.rdata ;
+  assign m_axil_ocl_rresp     = s_axil_mc_lo.rresp ;
+  assign m_axil_ocl_rvalid    = s_axil_mc_lo.rvalid;
+  assign s_axil_mc_li.rready  = m_axil_ocl_rready;
+
+  localparam axi_dram_data_width_lp = 512;
+
+  // axi4 interface
+  `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
+                          bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
+
+  bsg_axi4_mosi_bus_s m_axi4_cdc_lo, m_axi4_mem_lo;
+  bsg_axi4_miso_bus_s m_axi4_cdc_li, m_axi4_mem_li;
+
+  `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_dram_data_width_lp,
+                          bsg_axi4_dram_si_bus_s, bsg_axi4_dram_so_bus_s);
+
+  bsg_axi4_dram_si_bus_s s_axi4_dram_li;
+  bsg_axi4_dram_so_bus_s s_axi4_dram_lo;
+
+  `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p/2,
+                          bsg_axi4_h_mosi_bus_s, bsg_axi4_h_miso_bus_s);
+
+  //--------------------------------------------
+  // AXI4 Manycore System
+  //---------------------------------------------
+  assign cl_sh_ddr_awid         = s_axi4_dram_li.awid;
+  assign cl_sh_ddr_awaddr       = s_axi4_dram_li.awaddr;
+  assign cl_sh_ddr_awlen        = s_axi4_dram_li.awlen;
+  assign cl_sh_ddr_awsize       = s_axi4_dram_li.awsize;
+  assign cl_sh_ddr_awburst      = s_axi4_dram_li.awburst;
+  assign cl_sh_ddr_awlock       = s_axi4_dram_li.awlock;
+  assign cl_sh_ddr_awcache      = s_axi4_dram_li.awcache;
+  assign cl_sh_ddr_awprot       = s_axi4_dram_li.awprot;
+  assign cl_sh_ddr_awregion     = s_axi4_dram_li.awregion;
+  assign cl_sh_ddr_awqos        = s_axi4_dram_li.awqos;
+  assign cl_sh_ddr_awvalid      = s_axi4_dram_li.awvalid;
+  assign s_axi4_dram_lo.awready = sh_cl_ddr_awready;
+
+  assign cl_sh_ddr_wdata       = s_axi4_dram_li.wdata;
+  assign cl_sh_ddr_wstrb       = s_axi4_dram_li.wstrb;
+  assign cl_sh_ddr_wlast       = s_axi4_dram_li.wlast;
+  assign cl_sh_ddr_wvalid      = s_axi4_dram_li.wvalid;
+  assign s_axi4_dram_lo.wready = sh_cl_ddr_wready;
+
+  assign s_axi4_dram_lo.bid    = sh_cl_ddr_bid;
+  assign s_axi4_dram_lo.bresp  = sh_cl_ddr_bresp;
+  assign s_axi4_dram_lo.bvalid = sh_cl_ddr_bvalid;
+  assign cl_sh_ddr_bready      = s_axi4_dram_li.bready;
+
+  assign cl_sh_ddr_arid         = s_axi4_dram_li.arid;
+  assign cl_sh_ddr_araddr       = s_axi4_dram_li.araddr;
+  assign cl_sh_ddr_arlen        = s_axi4_dram_li.arlen;
+  assign cl_sh_ddr_arsize       = s_axi4_dram_li.arsize;
+  assign cl_sh_ddr_arburst      = s_axi4_dram_li.arburst;
+  assign cl_sh_ddr_arlock       = s_axi4_dram_li.arlock;
+  assign cl_sh_ddr_arcache      = s_axi4_dram_li.arcache;
+  assign cl_sh_ddr_arprot       = s_axi4_dram_li.arprot;
+  assign cl_sh_ddr_arregion     = s_axi4_dram_li.arregion;
+  assign cl_sh_ddr_arqos        = s_axi4_dram_li.arqos;
+  assign cl_sh_ddr_arvalid      = s_axi4_dram_li.arvalid;
+  assign s_axi4_dram_lo.arready = sh_cl_ddr_arready;
+
+  assign s_axi4_dram_lo.rid    = sh_cl_ddr_rid;
+  assign s_axi4_dram_lo.rdata  = sh_cl_ddr_rdata;
+  assign s_axi4_dram_lo.rresp  = sh_cl_ddr_rresp;
+  assign s_axi4_dram_lo.rlast  = sh_cl_ddr_rlast;
+  assign s_axi4_dram_lo.rvalid = sh_cl_ddr_rvalid;
+  assign cl_sh_ddr_rready      = s_axi4_dram_li.rready;
 
 
 `ifdef COSIM
@@ -287,7 +304,6 @@ module cl_manycore
       );
 
 `endif
-
 
    logic         core_clk;
    logic         core_reset;
@@ -324,341 +340,190 @@ module cl_manycore
 `endif
 
 
-   // bladerunner wrapper
-   localparam num_axi_slot_lp = (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
-                                 mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
-                                 mem_cfg_p == e_vcache_blocking_axi4_hbm) ?
-                                num_tiles_x_p : 1;
+  // bladerunner wrapper
+  localparam num_axi_slot_lp = (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
+                               mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
+                               mem_cfg_p == e_vcache_blocking_axi4_hbm) ?
+                              num_tiles_x_p : 1;
 
-  `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p,
-                          bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
+  bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_lo;
+  bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_li;
 
-    bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_lo;
-    bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] axi4_mc_cols_li;
-
-    // hb_manycore
-    bsg_bladerunner_wrapper #(.num_axi_slot_p(num_axi_slot_lp)) hb_mc_wrapper (
-      .clk_i       (core_clk        ),
-      .reset_i     (core_reset      ),
-      .clk2_i      (clk_main_a0     ),
-      .reset2_i    (~rst_main_n_sync),
-      .s_axil_bus_i(s_axil_mc_li    ),
-      .s_axil_bus_o(s_axil_mc_lo    ),
-      .m_axi4_bus_o(axi4_mc_cols_lo ),
-      .m_axi4_bus_i(axi4_mc_cols_li )
-    );
+  // hb_manycore
+  bsg_bladerunner_wrapper #(.num_axi_slot_p(num_axi_slot_lp)) hb_mc_wrapper (
+    .clk_i       (core_clk        ),
+    .reset_i     (core_reset      ),
+    .clk2_i      (clk_main_a0     ),
+    .reset2_i    (~rst_main_n_sync),
+    // AXI-Lite
+    .s_axil_bus_i(s_axil_mc_li    ),
+    .s_axil_bus_o(s_axil_mc_lo    ),
+    // AXI4 Master
+    .m_axi4_bus_o(axi4_mc_cols_lo ),
+    .m_axi4_bus_i(axi4_mc_cols_li )
+  );
 
 
   // LEVEL 3
   //
+  // Attach cache to output DRAM
   if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
       mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv3_axi4_c
-   // Attach cache to output DRAM
 
-    // AXI Address Write signals
-    assign m_axi4_manycore_awid     = axi4_mc_cols_lo[0].awid;
-    assign m_axi4_manycore_awaddr   = axi4_mc_cols_lo[0].awaddr;
-    assign m_axi4_manycore_awvalid  = axi4_mc_cols_lo[0].awvalid;
-    assign axi4_mc_cols_li[0].awready  = m_axi4_manycore_awready;
-    assign m_axi4_manycore_awlen    = axi4_mc_cols_lo[0].awlen;
-    assign m_axi4_manycore_awsize   = axi4_mc_cols_lo[0].awsize;
-    assign m_axi4_manycore_awburst  = axi4_mc_cols_lo[0].awburst;
-    assign m_axi4_manycore_awcache  = axi4_mc_cols_lo[0].awcache;
-    assign m_axi4_manycore_awprot   = axi4_mc_cols_lo[0].awprot;
-    assign m_axi4_manycore_awlock   = axi4_mc_cols_lo[0].awlock;
-    assign m_axi4_manycore_awregion = 4'b0;
-    assign m_axi4_manycore_awqos    = 4'b0;
+    assign m_axi4_mem_lo = axi4_mc_cols_lo[0];
+    assign axi4_mc_cols_li[0] = m_axi4_mem_li;
 
-    // AXI Write signals
-    assign m_axi4_manycore_wdata  = axi4_mc_cols_lo[0].wdata;
-    assign m_axi4_manycore_wstrb  = axi4_mc_cols_lo[0].wstrb;
-    assign m_axi4_manycore_wlast  = axi4_mc_cols_lo[0].wlast;
-    assign m_axi4_manycore_wvalid = axi4_mc_cols_lo[0].wvalid;
-    assign axi4_mc_cols_li[0].wready = m_axi4_manycore_wready;
+  end : lv3_axi4_c
 
-    // AXI Burst signals
-    assign axi4_mc_cols_li[0].bid    = m_axi4_manycore_bid;
-    assign axi4_mc_cols_li[0].bresp  = m_axi4_manycore_bresp;
-    assign axi4_mc_cols_li[0].bvalid = m_axi4_manycore_bvalid;
-    assign m_axi4_manycore_bready = axi4_mc_cols_lo[0].bready;
-
-    // AXI Address Read signals
-    assign m_axi4_manycore_arid     = axi4_mc_cols_lo[0].arid;
-    assign m_axi4_manycore_araddr   = axi4_mc_cols_lo[0].araddr;
-    assign m_axi4_manycore_arlen    = axi4_mc_cols_lo[0].arlen;
-    assign m_axi4_manycore_arsize   = axi4_mc_cols_lo[0].arsize;
-    assign m_axi4_manycore_arburst  = axi4_mc_cols_lo[0].arburst;
-    assign m_axi4_manycore_arcache  = axi4_mc_cols_lo[0].arcache;
-    assign m_axi4_manycore_arprot   = axi4_mc_cols_lo[0].arprot;
-    assign m_axi4_manycore_arlock   = axi4_mc_cols_lo[0].arlock;
-    assign m_axi4_manycore_arvalid  = axi4_mc_cols_lo[0].arvalid;
-    assign axi4_mc_cols_li[0].arready  = m_axi4_manycore_arready;
-    assign m_axi4_manycore_arregion = 4'b0;
-    assign m_axi4_manycore_arqos    = 4'b0;
-
-    // AXI Read signals
-    assign axi4_mc_cols_li[0].rid    = m_axi4_manycore_rid;
-    assign axi4_mc_cols_li[0].rdata  = m_axi4_manycore_rdata;
-    assign axi4_mc_cols_li[0].rresp  = m_axi4_manycore_rresp;
-    assign axi4_mc_cols_li[0].rlast  = m_axi4_manycore_rlast;
-    assign axi4_mc_cols_li[0].rvalid = m_axi4_manycore_rvalid;
-    assign m_axi4_manycore_rready = axi4_mc_cols_lo[0].rready;
-
-  end : lv3_axi4_c // if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram)
-
+  // Attach cache to xbar axi4 interface
   else if (mem_cfg_p == e_vcache_blocking_axi4_xbar_dram ||
-           mem_cfg_p == e_vcache_blocking_axi4_xbar_model) begin : lv3_xbar_c
+           mem_cfg_p == e_vcache_blocking_axi4_xbar_model ||
+           mem_cfg_p == e_vcache_blocking_axi4_hbm) begin : lv3_xbar_c
 
-    `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p, bsg_axi4_mosi_dram_s, bsg_axi4_miso_dram_s);
+    bsg_axi4_mosi_bus_s [num_axi_slot_lp-1:0] s_axi4_dw_dn_li, m_axi4_dw_up_lo;
+    bsg_axi4_miso_bus_s [num_axi_slot_lp-1:0] s_axi4_dw_dn_lo, m_axi4_dw_up_li;
 
-    bsg_axi4_mosi_dram_s axi4_dram_bus_lo;
-    bsg_axi4_miso_dram_s axi4_dram_bus_li;
+    bsg_axi4_h_mosi_bus_s [num_axi_slot_lp-1:0] s_axi4_reg_buf_li, m_axi4_reg_buf_lo;
+    bsg_axi4_h_miso_bus_s [num_axi_slot_lp-1:0] s_axi4_reg_buf_lo, m_axi4_reg_buf_li;
+
+    // assign s_axi4_dw_dn_li = axi4_mc_cols_lo;
+    // assign axi4_mc_cols_li = s_axi4_dw_dn_lo;
+
+    always_comb begin
+      m_axi4_dw_up_lo = axi4_mc_cols_lo;
+      axi4_mc_cols_li = m_axi4_dw_up_li;
+    end
+
+    // assign m_axi4_dw_up_lo = axi4_mc_cols_lo;
+    // assign axi4_mc_cols_li = m_axi4_dw_up_li;
+
+    for (genvar i = 0; i < num_axi_slot_lp; i++) begin : axi_data_pip
+
+      // assign m_axi4_dw_up_lo[i] = s_axi4_dw_dn_li[i];
+      // assign s_axi4_dw_dn_lo[i] = m_axi4_dw_up_li[i];
+
+      // axi4_data_width_converter #(
+      //   .id_width_p    (axi_id_width_p    ),
+      //   .addr_width_p  (axi_addr_width_p  ),
+      //   .s_data_width_p(axi_data_width_p  ),
+      //   .m_data_width_p(axi_data_width_p/2),
+      //   .device_family ("virtexuplus"     )
+      // ) dw_cvt_dn (
+      //   .clk_i   (core_clk            ),
+      //   .reset_i (core_reset          ),
+      //   .s_axi4_i(s_axi4_dw_dn_li[i]   ),
+      //   .s_axi4_o(s_axi4_dw_dn_lo[i]   ),
+      //   .m_axi4_o(s_axi4_reg_buf_li[i]),
+      //   .m_axi4_i(s_axi4_reg_buf_lo[i])
+      // );
+
+      // axi4_register_slice #(
+      //   .id_width_p   (axi_id_width_p    ),
+      //   .addr_width_p (axi_addr_width_p  ),
+      //   .data_width_p (axi_data_width_p/2),
+      //   .device_family("virtexuplus"     )
+      // ) axi4_reg_buf (
+      //   .clk_i   (core_clk            ),
+      //   .reset_i (core_reset          ),
+      //   .s_axi4_i(s_axi4_reg_buf_li[i]),
+      //   .s_axi4_o(s_axi4_reg_buf_lo[i]),
+      //   .m_axi4_o(m_axi4_reg_buf_lo[i]),
+      //   .m_axi4_i(m_axi4_reg_buf_li[i])
+      // );
+
+      // axi4_data_width_converter #(
+      //   .id_width_p    (axi_id_width_p    ),
+      //   .addr_width_p  (axi_addr_width_p  ),
+      //   .s_data_width_p(axi_data_width_p/2),
+      //   .m_data_width_p(axi_data_width_p  ),
+      //   .device_family ("virtexuplus"     )
+      // ) dw_cvt_up (
+      //   .clk_i   (core_clk            ),
+      //   .reset_i (core_reset          ),
+      //   .s_axi4_i(m_axi4_reg_buf_lo[i]),
+      //   .s_axi4_o(m_axi4_reg_buf_li[i]),
+      //   .m_axi4_o(m_axi4_dw_up_lo[i]   ),
+      //   .m_axi4_i(m_axi4_dw_up_li[i]   )
+      // );
+
+  end : axi_data_pip
 
     axi4_mux #(
-      .slot_num_p  (num_tiles_x_p   ),
+      .slot_num_p  (num_axi_slot_lp ),
       .id_width_p  (axi_id_width_p  ),
       .addr_width_p(axi_addr_width_p),
       .data_width_p(axi_data_width_p)
     ) axi4_xbar_mux (
-      .clk_i       (core_clk        ),
-      .reset_i     (core_reset      ),
-      .s_axi4_par_i(axi4_mc_cols_lo ),
-      .s_axi4_par_o(axi4_mc_cols_li ),
-      .m_axi4_ser_o(axi4_dram_bus_lo),
-      .m_axi4_ser_i(axi4_dram_bus_li)
+      .clk_i       (core_clk      ),
+      .reset_i     (core_reset    ),
+      .s_axi4_par_i(m_axi4_dw_up_lo),
+      .s_axi4_par_o(m_axi4_dw_up_li),
+      .m_axi4_ser_o(m_axi4_mem_lo ),
+      .m_axi4_ser_i(m_axi4_mem_li )
     );
 
-    // AXI Address Write signals
-    assign m_axi4_manycore_awid     = axi4_dram_bus_lo.awid;
-    assign m_axi4_manycore_awaddr   = axi4_dram_bus_lo.awaddr;
-    assign m_axi4_manycore_awvalid  = axi4_dram_bus_lo.awvalid;
-    assign axi4_dram_bus_li.awready = m_axi4_manycore_awready;
-    assign m_axi4_manycore_awlen    = axi4_dram_bus_lo.awlen;
-    assign m_axi4_manycore_awsize   = axi4_dram_bus_lo.awsize;
-    assign m_axi4_manycore_awburst  = axi4_dram_bus_lo.awburst;
-    assign m_axi4_manycore_awcache  = axi4_dram_bus_lo.awcache;
-    assign m_axi4_manycore_awprot   = axi4_dram_bus_lo.awprot;
-    assign m_axi4_manycore_awlock   = axi4_dram_bus_lo.awlock;
-    assign m_axi4_manycore_awregion = 4'b0;
-    assign m_axi4_manycore_awqos    = 4'b0;
+  end : lv3_xbar_c
 
-    // AXI Write signals
-    assign m_axi4_manycore_wdata   = axi4_dram_bus_lo.wdata;
-    assign m_axi4_manycore_wstrb   = axi4_dram_bus_lo.wstrb;
-    assign m_axi4_manycore_wlast   = axi4_dram_bus_lo.wlast;
-    assign m_axi4_manycore_wvalid  = axi4_dram_bus_lo.wvalid;
-    assign axi4_dram_bus_li.wready = m_axi4_manycore_wready;
+  bsg_axi4_mosi_bus_s m_axi4_cdc_lo;
+  bsg_axi4_miso_bus_s m_axi4_cdc_li;
 
-    // AXI Burst signals
-    assign axi4_dram_bus_li.bid    = m_axi4_manycore_bid;
-    assign axi4_dram_bus_li.bresp  = m_axi4_manycore_bresp;
-    assign axi4_dram_bus_li.bvalid = m_axi4_manycore_bvalid;
-    assign m_axi4_manycore_bready  = axi4_dram_bus_lo.bready;
+`ifdef COSIM
 
-    // AXI Address Read signals
-    assign m_axi4_manycore_arid     = axi4_dram_bus_lo.arid;
-    assign m_axi4_manycore_araddr   = axi4_dram_bus_lo.araddr;
-    assign m_axi4_manycore_arlen    = axi4_dram_bus_lo.arlen;
-    assign m_axi4_manycore_arsize   = axi4_dram_bus_lo.arsize;
-    assign m_axi4_manycore_arburst  = axi4_dram_bus_lo.arburst;
-    assign m_axi4_manycore_arcache  = axi4_dram_bus_lo.arcache;
-    assign m_axi4_manycore_arprot   = axi4_dram_bus_lo.arprot;
-    assign m_axi4_manycore_arlock   = axi4_dram_bus_lo.arlock;
-    assign m_axi4_manycore_arvalid  = axi4_dram_bus_lo.arvalid;
-    assign axi4_dram_bus_li.arready = m_axi4_manycore_arready;
-    assign m_axi4_manycore_arregion = 4'b0;
-    assign m_axi4_manycore_arqos    = 4'b0;
+  axi4_clock_converter #(
+    .id_width_p        (axi_id_width_p                       ),
+    .addr_width_p      (axi_addr_width_p                     ),
+    .data_width_p      (axi_data_width_p                     ),
+    .device_family     ("virtexuplus"                        ),
+    .s_axi_aclk_ratio_p(1                                    ),
+    .m_axi_aclk_ratio_p(lc_core_clk_period_p/lc_clk_main_a0_p),
+    .is_aclk_async_p   (1                                    )
+  ) axi4_clk_cvt (
+    .clk_src_i   (core_clk     ),
+    .reset_src_i (core_reset   ),
+    .clk_dst_i   (clk_main_a0  ),
+    .reset_dst_i (~rst_main_n  ),
+    .s_axi4_src_i(m_axi4_mem_lo),
+    .s_axi4_src_o(m_axi4_mem_li),
+    .m_axi4_dst_o(m_axi4_cdc_lo),
+    .m_axi4_dst_i(m_axi4_cdc_li)
+  );
 
-    // AXI Read signals
-    assign axi4_dram_bus_li.rid    = m_axi4_manycore_rid;
-    assign axi4_dram_bus_li.rdata  = m_axi4_manycore_rdata;
-    assign axi4_dram_bus_li.rresp  = m_axi4_manycore_rresp;
-    assign axi4_dram_bus_li.rlast  = m_axi4_manycore_rlast;
-    assign axi4_dram_bus_li.rvalid = m_axi4_manycore_rvalid;
-    assign m_axi4_manycore_rready  = axi4_dram_bus_lo.rready;
+`else
+
+  assign m_axi4_cdc_lo = m_axi4_mem_lo;
+  assign m_axi4_mem_li = m_axi4_cdc_li;
+
+`endif
+
+  if (axi_dram_data_width_lp != axi_data_width_p) begin : dram_dw_cvt
+
+    axi4_data_width_converter #(
+      .id_width_p    (axi_id_width_p        ),
+      .addr_width_p  (axi_addr_width_p      ),
+      .s_data_width_p(axi_data_width_p      ),
+      .m_data_width_p(axi_dram_data_width_lp),
+      .device_family ("virtexuplus"         )
+    ) dw_cvt_dram (
+      .clk_i   (clk_main_a0   ),
+      .reset_i (~rst_main_n   ),
+      .s_axi4_i(m_axi4_cdc_lo ),
+      .s_axi4_o(m_axi4_cdc_li ),
+      .m_axi4_o(s_axi4_dram_li),
+      .m_axi4_i(s_axi4_dram_lo)
+    );
+
+  end : dram_dw_cvt
+
+  else begin
+
+    assign s_axi4_dram_li = m_axi4_cdc_lo;
+    assign m_axi4_cdc_li = s_axi4_dram_lo;
 
   end
 
-
-`ifdef COSIM
-   axi_clock_converter_v2_1_18_axi_clock_converter
-     #(.C_FAMILY("virtexuplus"),
-       .C_AXI_ID_WIDTH(6),
-       .C_AXI_ADDR_WIDTH(64),  // Width of s_axi_awaddr, s_axi_araddr, m_axi_awaddr and
-       .C_AXI_DATA_WIDTH(512), // Width of WDATA and RDATA (either side).
-       .C_S_AXI_ACLK_RATIO(1), // Clock frequency ratio of SI w.r.t. MI. (Slowest of all clock inputs should have ratio=1.)
-       .C_M_AXI_ACLK_RATIO(lc_core_clk_period_p/lc_clk_main_a0_p),
-       // S:M or M:S must be integer ratio.
-       // Format: Bit32; Range: >='h00000001.
-       .C_AXI_IS_ACLK_ASYNC(1), // Indicates whether S and M clocks are asynchronous.
-       // FUTURE FEATURE
-       // Format: Bit1. Range = 1'b0.
-       .C_AXI_PROTOCOL(0), // Protocol of this SI/MI slot.
-       .C_AXI_SUPPORTS_USER_SIGNALS (0),
-       .C_AXI_SUPPORTS_WRITE(1),
-       .C_AXI_SUPPORTS_READ(1),
-       .C_SYNCHRONIZER_STAGE(3)
-       )
-   axi4_dram_cdc
-     (.s_axi_aclk(core_clk),
-      .s_axi_aresetn(~core_reset),
-
-      // Slave Interface Write Address Ports
-      .s_axi_awid(m_axi4_manycore_awid),
-      .s_axi_awaddr(m_axi4_manycore_awaddr),
-      .s_axi_awlen(m_axi4_manycore_awlen),
-      .s_axi_awsize(m_axi4_manycore_awsize),
-      .s_axi_awburst(m_axi4_manycore_awburst),
-      .s_axi_awlock(m_axi4_manycore_awlock),
-      .s_axi_awcache(m_axi4_manycore_awcache),
-      .s_axi_awprot(m_axi4_manycore_awprot),
-      .s_axi_awregion(m_axi4_manycore_awregion),
-      .s_axi_awqos(m_axi4_manycore_awqos),
-      .s_axi_awvalid(m_axi4_manycore_awvalid),
-      .s_axi_awready(m_axi4_manycore_awready),
-
-      // Slave Interface Write Data Ports
-      .s_axi_wid(m_axi4_manycore_wid),
-      .s_axi_wdata(m_axi4_manycore_wdata),
-      .s_axi_wstrb(m_axi4_manycore_wstrb),
-      .s_axi_wlast(m_axi4_manycore_wlast),
-      .s_axi_wvalid(m_axi4_manycore_wvalid),
-      .s_axi_wready(m_axi4_manycore_wready),
-
-      // Slave Interface Write Response Ports
-      .s_axi_bid(m_axi4_manycore_bid),
-      .s_axi_bresp(m_axi4_manycore_bresp),
-      .s_axi_bvalid(m_axi4_manycore_bvalid),
-      .s_axi_bready(m_axi4_manycore_bready),
-
-      // Slave Interface Read Address Ports
-      .s_axi_arid(m_axi4_manycore_arid),
-      .s_axi_araddr(m_axi4_manycore_araddr),
-      .s_axi_arlen(m_axi4_manycore_arlen),
-      .s_axi_arsize(m_axi4_manycore_arsize),
-      .s_axi_arburst(m_axi4_manycore_arburst),
-      .s_axi_arlock(m_axi4_manycore_arlock),
-      .s_axi_arcache(m_axi4_manycore_arcache),
-      .s_axi_arprot(m_axi4_manycore_arprot),
-      .s_axi_arregion(m_axi4_manycore_arregion),
-      .s_axi_arqos(m_axi4_manycore_arqos),
-      .s_axi_arvalid(m_axi4_manycore_arvalid),
-      .s_axi_arready(m_axi4_manycore_arready),
-
-      // Slave Interface Read Data Ports
-      .s_axi_rid(m_axi4_manycore_rid),
-      .s_axi_rdata(m_axi4_manycore_rdata),
-      .s_axi_rresp(m_axi4_manycore_rresp),
-      .s_axi_rlast(m_axi4_manycore_rlast),
-      .s_axi_rvalid(m_axi4_manycore_rvalid),
-      .s_axi_rready(m_axi4_manycore_rready),
-
-      // Master Interface System Signals
-      .m_axi_aclk(clk_main_a0),
-      .m_axi_aresetn(rst_main_n),
-
-      // Master Interface Write Address Port
-      .m_axi_awid(cl_sh_ddr_awid),
-      .m_axi_awaddr(cl_sh_ddr_awaddr),
-      .m_axi_awlen(cl_sh_ddr_awlen),
-      .m_axi_awsize(cl_sh_ddr_awsize),
-      .m_axi_awburst(cl_sh_ddr_awburst),
-      .m_axi_awlock(cl_sh_ddr_awlock),
-      .m_axi_awcache(cl_sh_ddr_awcache),
-      .m_axi_awprot(cl_sh_ddr_awprot),
-      .m_axi_awregion(cl_sh_ddr_awregion),
-      .m_axi_awqos(cl_sh_ddr_awqos),
-      .m_axi_awvalid(cl_sh_ddr_awvalid),
-      .m_axi_awready(sh_cl_ddr_awready),
-
-      // Master Interface Write Data Ports
-      .m_axi_wdata(cl_sh_ddr_wdata),
-      .m_axi_wstrb(cl_sh_ddr_wstrb),
-      .m_axi_wlast(cl_sh_ddr_wlast),
-      .m_axi_wvalid(cl_sh_ddr_wvalid),
-      .m_axi_wready(sh_cl_ddr_wready),
-
-      // Master Interface Write Response Ports
-      .m_axi_bid(sh_cl_ddr_bid),
-      .m_axi_bresp(sh_cl_ddr_bresp),
-      .m_axi_bvalid(sh_cl_ddr_bvalid),
-      .m_axi_bready(cl_sh_ddr_bready),
-
-      // Master Interface Read Address Port
-      .m_axi_arid(cl_sh_ddr_arid),
-      .m_axi_araddr(cl_sh_ddr_araddr),
-      .m_axi_arlen(cl_sh_ddr_arlen),
-      .m_axi_arsize(cl_sh_ddr_arsize),
-      .m_axi_arburst(cl_sh_ddr_arburst),
-      .m_axi_arlock(cl_sh_ddr_arlock),
-      .m_axi_arcache(cl_sh_ddr_arcache),
-      .m_axi_arprot(cl_sh_ddr_arprot),
-      .m_axi_arregion(cl_sh_ddr_arregion),
-      .m_axi_arqos(cl_sh_ddr_arqos),
-      .m_axi_arvalid(cl_sh_ddr_arvalid),
-      .m_axi_arready(sh_cl_ddr_arready),
-
-      // Master Interface Read Data Ports
-      .m_axi_rid(sh_cl_ddr_rid),
-      .m_axi_rdata(sh_cl_ddr_rdata),
-      .m_axi_rresp(sh_cl_ddr_rresp),
-      .m_axi_rlast(sh_cl_ddr_rlast),
-      .m_axi_rvalid(sh_cl_ddr_rvalid),
-      .m_axi_rready(cl_sh_ddr_rready));
-`else
-
-   //--------------------------------------------
-   // AXI4 Manycore System
-   //---------------------------------------------
-   assign m_axi4_manycore_rid = sh_cl_ddr_rid;
-   assign m_axi4_manycore_rdata = sh_cl_ddr_rdata;
-   assign m_axi4_manycore_rresp = sh_cl_ddr_rresp;
-   assign m_axi4_manycore_rlast = sh_cl_ddr_rlast;
-   assign m_axi4_manycore_rvalid = sh_cl_ddr_rvalid;
-   assign cl_sh_ddr_rready = m_axi4_manycore_rready;
-
-   assign cl_sh_ddr_awid = m_axi4_manycore_awid;
-   assign cl_sh_ddr_awaddr = m_axi4_manycore_awaddr;
-   assign cl_sh_ddr_awlen = m_axi4_manycore_awlen;
-   assign cl_sh_ddr_awsize = m_axi4_manycore_awsize;
-   assign cl_sh_ddr_awburst = m_axi4_manycore_awburst;
-   assign cl_sh_ddr_awlock = m_axi4_manycore_awlock;
-   assign cl_sh_ddr_awcache = m_axi4_manycore_awcache;
-   assign cl_sh_ddr_awprot = m_axi4_manycore_awprot;
-   assign cl_sh_ddr_awregion = m_axi4_manycore_awregion;
-   assign cl_sh_ddr_awqos = m_axi4_manycore_awqos;
-   assign cl_sh_ddr_awvalid = m_axi4_manycore_awvalid;
-   assign m_axi4_manycore_awready = sh_cl_ddr_awready;
-
-   assign cl_sh_ddr_wdata = m_axi4_manycore_wdata;
-   assign cl_sh_ddr_wstrb = m_axi4_manycore_wstrb;
-   assign cl_sh_ddr_wlast = m_axi4_manycore_wlast;
-   assign cl_sh_ddr_wvalid = m_axi4_manycore_wvalid;
-   assign m_axi4_manycore_wready = sh_cl_ddr_wready;
-
-   assign m_axi4_manycore_bid = sh_cl_ddr_bid;
-   assign m_axi4_manycore_bresp = sh_cl_ddr_bresp;
-   assign m_axi4_manycore_bvalid = sh_cl_ddr_bvalid;
-   assign cl_sh_ddr_bready = m_axi4_manycore_bready;
-
-   assign cl_sh_ddr_arid = m_axi4_manycore_arid;
-   assign cl_sh_ddr_araddr = m_axi4_manycore_araddr;
-   assign cl_sh_ddr_arlen = m_axi4_manycore_arlen;
-   assign cl_sh_ddr_arsize = m_axi4_manycore_arsize;
-   assign cl_sh_ddr_arburst = m_axi4_manycore_arburst;
-   assign cl_sh_ddr_arlock = m_axi4_manycore_arlock;
-   assign cl_sh_ddr_arcache = m_axi4_manycore_arcache;
-   assign cl_sh_ddr_arprot = m_axi4_manycore_arprot;
-   assign cl_sh_ddr_arregion = m_axi4_manycore_arregion;
-   assign cl_sh_ddr_arqos = m_axi4_manycore_arqos;
-   assign cl_sh_ddr_arvalid = m_axi4_manycore_arvalid;
-   assign m_axi4_manycore_arready = sh_cl_ddr_arready;
-`endif
-
-
-   //-----------------------------------------------
-   // Debug bridge, used if need Virtual JTAG
-   //-----------------------------------------------
+ //-----------------------------------------------
+ // Debug bridge, used if need Virtual JTAG
+ //-----------------------------------------------
 `ifndef DISABLE_VJTAG_DEBUG
 
    // Flop for timing global clock counter
