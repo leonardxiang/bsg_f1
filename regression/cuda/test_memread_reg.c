@@ -53,19 +53,22 @@
 // RD_BUFFER_SZ is the number of bytes in the buffer read by the
 // kernel.
 #define RD_BUFFER_SZ 1024
+#define NUM_RUNS 5
 // read_t is the type that the kernel will be reading
 typedef int read_t;
 
-void bsg_timer(uint64_t *duration){
+void bsg_timer(uint64_t *time, uint64_t *duration){
         static uint64_t start_ns = 0;
         uint64_t stop_ns;
 
 #ifdef COSIM
-        stop_ns = bsg_utc() * 1000;
+        sv_bsg_time(&stop_ns);
+        stop_ns = stop_ns / 1000;
 #else
-        sv_bsg_realtime(&stop_ns)/ 1000;
+        stop_ns = bsg_utc() * 1000;
 #endif
-        duration = stop_ns - start_ns;
+        *duration = stop_ns - start_ns;
+        *time = stop_ns;
         start_ns = stop_ns;
 }
 
@@ -89,7 +92,7 @@ int kernel_memread_reg (int argc, char **argv) {
         read_t res;
         eva_t src_eva;
         eva_t res_eva;
-        uint64_t timer_ms;
+        uint64_t duration, timer;
         // Initialize device, load binary and unfreeze tiles.
         rc = hb_mc_device_init(&device, test_name, 0);
         if (rc != HB_MC_SUCCESS) {
@@ -145,129 +148,150 @@ int kernel_memread_reg (int argc, char **argv) {
 
         // Enquque grid of tile groups, pass in grid and tile group
         // dimensions, kernel name, number and list of input arguments
-        rc = hb_mc_application_init (&device, grid_dim, tg_dim,
-                                     "kernel_memread_reg_base",
-                                     sizeof(cuda_argv)/sizeof(cuda_argv[0]),
-                                     cuda_argv);
+        for(int i = 0; i < NUM_RUNS; ++i){ // TODO: This launches all enqueued jobs simultaneously
+                rc = hb_mc_application_init (&device, grid_dim, tg_dim,
+                                             "kernel_memread_reg_base",
+                                             sizeof(cuda_argv)/sizeof(cuda_argv[0]),
+                                             cuda_argv);
+        }
+
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to initialize grid.\n");
                 return rc;
         }
 
-        bsg_timer(&timer_ms);
+        bsg_timer(&timer, &duration);
         // Launch and execute all tile groups on device and wait for all to finish.
         rc = hb_mc_device_tile_groups_execute(&device);
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to execute tile groups.\n");
                 return rc;
         }
-        bsg_timer(&timer_ms);
-        bsg_pr_info("Kernel Duration was %llu ns\n");
+        bsg_timer(&timer, &duration);
+        bsg_pr_info("Current Time is %llu ns\n", timer);
+        bsg_pr_info("Kernel Duration over %d iterations was %llu ns (average %llu ns)\n", NUM_RUNS, duration, duration/NUM_RUNS);
 
         // Enquque grid of tile groups, pass in grid and tile group
         // dimensions, kernel name, number and list of input arguments
-        rc = hb_mc_application_init (&device, grid_dim, tg_dim,
-                                     "kernel_memread_reg_2",
-                                     sizeof(cuda_argv)/sizeof(cuda_argv[0]),
-                                     cuda_argv);
+        for(int i = 0; i < NUM_RUNS; ++i){
+                rc = hb_mc_application_init (&device, grid_dim, tg_dim,
+                                             "kernel_memread_reg_2",
+                                             sizeof(cuda_argv)/sizeof(cuda_argv[0]),
+                                             cuda_argv);
+        }
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to initialize grid.\n");
                 return rc;
         }
 
-        bsg_timer(&timer_ms);
+        bsg_timer(&timer, &duration);
         // Launch and execute all tile groups on device and wait for all to finish.
         rc = hb_mc_device_tile_groups_execute(&device);
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to execute tile groups.\n");
                 return rc;
         }
-        bsg_timer(&timer_ms);
-        bsg_pr_info("Kernel Duration was %llu ns\n");
+        bsg_timer(&timer, &duration);
+        bsg_pr_info("Current Time is %llu ns\n", timer);
+        bsg_pr_info("Kernel Duration over %d iterations was %llu ns (average %llu ns)\n", NUM_RUNS, duration, duration/NUM_RUNS);
 
         // Enquque grid of tile groups, pass in grid and tile group
         // dimensions, kernel name, number and list of input arguments
-        rc = hb_mc_application_init (&device, grid_dim, tg_dim,
-                                     "kernel_memread_reg_4",
-                                     sizeof(cuda_argv)/sizeof(cuda_argv[0]),
-                                     cuda_argv);
+        for(int i = 0; i < NUM_RUNS; ++i){
+                rc = hb_mc_application_init (&device, grid_dim, tg_dim,
+                                             "kernel_memread_reg_4",
+                                             sizeof(cuda_argv)/sizeof(cuda_argv[0]),
+                                             cuda_argv);
+        }
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to initialize grid.\n");
                 return rc;
         }
 
-        bsg_timer(&timer_ms);
+        bsg_timer(&timer, &duration);
         // Launch and execute all tile groups on device and wait for all to finish.
         rc = hb_mc_device_tile_groups_execute(&device);
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to execute tile groups.\n");
                 return rc;
         }
-        bsg_timer(&timer_ms);
-        bsg_pr_info("Kernel Duration was %llu ns\n");
+        bsg_timer(&timer, &duration);
+        bsg_pr_info("Current Time is %llu ns\n", timer);
+        bsg_pr_info("Kernel Duration over %d iterations was %llu ns (average %llu ns)\n", NUM_RUNS, duration, duration/NUM_RUNS);
 
         // Enquque grid of tile groups, pass in grid and tile group
         // dimensions, kernel name, number and list of input arguments
-        rc = hb_mc_application_init (&device, grid_dim, tg_dim,
-                                     "kernel_memread_reg_8",
-                                     sizeof(cuda_argv)/sizeof(cuda_argv[0]),
-                                     cuda_argv);
+        for(int i = 0; i < NUM_RUNS; ++i){
+                rc = hb_mc_application_init (&device, grid_dim, tg_dim,
+                                             "kernel_memread_reg_8",
+                                             sizeof(cuda_argv)/sizeof(cuda_argv[0]),
+                                             cuda_argv);
+        }
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to initialize grid.\n");
                 return rc;
         }
 
-        bsg_timer(&timer_ms);
+        bsg_timer(&timer, &duration);
         // Launch and execute all tile groups on device and wait for all to finish.
         rc = hb_mc_device_tile_groups_execute(&device);
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to execute tile groups.\n");
                 return rc;
         }
-        bsg_timer(&timer_ms);
-        bsg_pr_info("Kernel Duration was %llu ns\n");
+        bsg_timer(&timer, &duration);
+        bsg_pr_info("Current Time is %llu ns\n", timer);
+        bsg_pr_info("Kernel Duration over %d iterations was %llu ns (average %llu ns)\n", NUM_RUNS, duration, duration/NUM_RUNS);
 
         // Enquque grid of tile groups, pass in grid and tile group
         // dimensions, kernel name, number and list of input arguments
-        rc = hb_mc_application_init (&device, grid_dim, tg_dim,
-                                     "kernel_memread_reg_16",
-                                     sizeof(cuda_argv)/sizeof(cuda_argv[0]),
-                                     cuda_argv);
+        for(int i = 0; i < NUM_RUNS; ++i){
+                rc = hb_mc_application_init (&device, grid_dim, tg_dim,
+                                             "kernel_memread_reg_16",
+                                             sizeof(cuda_argv)/sizeof(cuda_argv[0]),
+                                             cuda_argv);
+        }
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to initialize grid.\n");
                 return rc;
         }
 
-        bsg_timer(&timer_ms);
+        bsg_timer(&timer, &duration);
+
         // Launch and execute all tile groups on device and wait for all to finish.
         rc = hb_mc_device_tile_groups_execute(&device);
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to execute tile groups.\n");
                 return rc;
         }
-        bsg_timer(&timer_ms);
-        bsg_pr_info("Kernel Duration was %llu ns\n");
+        bsg_timer(&timer, &duration);
+        bsg_pr_info("Current Time is %llu ns\n", timer);
+        bsg_pr_info("Kernel Duration over %d iterations was %llu ns (average %llu ns)\n", NUM_RUNS, duration, duration/NUM_RUNS);
 
         // Enquque grid of tile groups, pass in grid and tile group
         // dimensions, kernel name, number and list of input arguments
-        rc = hb_mc_application_init (&device, grid_dim, tg_dim,
-                                     "kernel_memread_reg_32",
-                                     sizeof(cuda_argv)/sizeof(cuda_argv[0]),
-                                     cuda_argv);
+        for(int i = 0; i < NUM_RUNS; ++i){
+                rc = hb_mc_application_init (&device, grid_dim, tg_dim,
+                                             "kernel_memread_reg_32",
+                                             sizeof(cuda_argv)/sizeof(cuda_argv[0]),
+                                             cuda_argv);
+        }
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to initialize grid.\n");
                 return rc;
         }
 
-        bsg_timer(&timer_ms);
+        bsg_timer(&timer, &duration);
+
         // Launch and execute all tile groups on device and wait for all to finish.
         rc = hb_mc_device_tile_groups_execute(&device);
         if (rc != HB_MC_SUCCESS) {
                 bsg_pr_err("Failed to execute tile groups.\n");
                 return rc;
         }
-        bsg_timer(&timer_ms);
-        bsg_pr_info("Kernel Duration was %llu ns\n");
+        bsg_timer(&timer, &duration);
+        bsg_pr_info("Current Time is %llu ns\n", timer);
+        bsg_pr_info("Kernel Duration over %d iterations was %llu ns (average %llu ns)\n", NUM_RUNS, duration, duration/NUM_RUNS);
 
         // Copy result from device DRAM into host memory.
         rc = hb_mc_device_memcpy (&device, (void *) &res, res_eva,
