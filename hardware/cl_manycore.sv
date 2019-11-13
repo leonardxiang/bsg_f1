@@ -474,11 +474,13 @@ module cl_manycore
 
     bind bsg_cache vcache_profiler #(
       .data_width_p(data_width_p)
+      ,.addr_width_p(addr_width_p)
     ) vcache_prof (
       .*
       ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
       ,.print_stat_v_i($root.tb.card.fpga.CL.print_stat_v_lo)
       ,.print_stat_tag_i($root.tb.card.fpga.CL.print_stat_tag_lo)
+      ,.trace_en_i($root.tb.card.fpga.CL.trace_en)
     );
 
   end // block: lv1_vcache
