@@ -22,6 +22,7 @@ module mc_memory_hierarchy
   , parameter axi_id_width_p = "inv"
   , parameter axi_addr_width_p = "inv"
   , parameter axi_data_width_p = "inv"
+  , localparam ch_addr_width_lp = $clog2(((1 << 31)/num_axi4_p))
   , localparam link_sif_width_lp =
   `bsg_manycore_link_sif_width(addr_width_p,data_width_p,x_cord_width_p,y_cord_width_p,load_id_width_p)
   , localparam axi4_mosi_bus_width_lp =
@@ -57,12 +58,23 @@ module mc_memory_hierarchy
   // -------------------------------------------------
   `declare_bsg_axi4_bus_s(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p, bsg_axi4_mosi_bus_s, bsg_axi4_miso_bus_s);
 
+  bsg_axi4_mosi_bus_s [num_axi4_p-1:0] cache_axi4_lo;
+  bsg_axi4_miso_bus_s [num_axi4_p-1:0] cache_axi4_li;
+
   bsg_axi4_mosi_bus_s [num_axi4_p-1:0] m_axi4_lo_cast;
   bsg_axi4_miso_bus_s [num_axi4_p-1:0] m_axi4_li_cast;
 
   assign m_axi4_bus_o = m_axi4_lo_cast;
   assign m_axi4_li_cast = m_axi4_bus_i;
 
+  for (genvar i = 0; i < num_axi4_p; i++) begin : mem_ch
+    always_comb begin
+      m_axi4_lo_cast[i] = cache_axi4_lo[i];
+      m_axi4_lo_cast[i].awaddr = cache_axi4_lo[i].awaddr | (i << ch_addr_width_lp);
+      m_axi4_lo_cast[i].araddr = cache_axi4_lo[i].araddr | (i << ch_addr_width_lp);
+      cache_axi4_li[i] = m_axi4_li_cast[i];
+    end
+  end : mem_ch
 
   localparam byte_offset_width_lp = `BSG_SAFE_CLOG2(data_width_p>>3)             ;
   localparam cache_addr_width_lp  = (addr_width_p-1+byte_offset_width_lp)        ;
@@ -109,7 +121,7 @@ module mc_memory_hierarchy
       );
     end
 
-    assign m_axi4_lo_cast = '0;
+    assign cache_axi4_lo = '0;
 
     bind bsg_nonsynth_mem_infinite infinite_mem_profiler #(
       .data_width_p(data_width_p)
@@ -205,7 +217,7 @@ module mc_memory_hierarchy
 
     for (genvar i = 0; i < num_axi4_p; i++) begin : cache_to_axi
 
-      bsg_cache_to_axi_hashed #(
+      bsg_cache_to_axi #(
         .addr_width_p         (cache_addr_width_lp  ),
         .block_size_in_words_p(block_size_in_words_p),
         .data_width_p         (data_width_p         ),
@@ -231,52 +243,52 @@ module mc_memory_hierarchy
         .dma_data_v_i    (cache_dma_data_v_lo[i]    ),
         .dma_data_yumi_o (cache_dma_data_yumi_li[i] ),
 
-        .axi_awid_o      (m_axi4_lo_cast[i].awid   ),
-        .axi_awaddr_o    (m_axi4_lo_cast[i].awaddr ),
-        .axi_awlen_o     (m_axi4_lo_cast[i].awlen  ),
-        .axi_awsize_o    (m_axi4_lo_cast[i].awsize ),
-        .axi_awburst_o   (m_axi4_lo_cast[i].awburst),
-        .axi_awcache_o   (m_axi4_lo_cast[i].awcache),
-        .axi_awprot_o    (m_axi4_lo_cast[i].awprot ),
-        .axi_awlock_o    (m_axi4_lo_cast[i].awlock ),
-        .axi_awvalid_o   (m_axi4_lo_cast[i].awvalid),
-        .axi_awready_i   (m_axi4_li_cast[i].awready),
+        .axi_awid_o      (cache_axi4_lo[i].awid   ),
+        .axi_awaddr_o    (cache_axi4_lo[i].awaddr ),
+        .axi_awlen_o     (cache_axi4_lo[i].awlen  ),
+        .axi_awsize_o    (cache_axi4_lo[i].awsize ),
+        .axi_awburst_o   (cache_axi4_lo[i].awburst),
+        .axi_awcache_o   (cache_axi4_lo[i].awcache),
+        .axi_awprot_o    (cache_axi4_lo[i].awprot ),
+        .axi_awlock_o    (cache_axi4_lo[i].awlock ),
+        .axi_awvalid_o   (cache_axi4_lo[i].awvalid),
+        .axi_awready_i   (cache_axi4_li[i].awready),
 
-        .axi_wdata_o     (m_axi4_lo_cast[i].wdata  ),
-        .axi_wstrb_o     (m_axi4_lo_cast[i].wstrb  ),
-        .axi_wlast_o     (m_axi4_lo_cast[i].wlast  ),
-        .axi_wvalid_o    (m_axi4_lo_cast[i].wvalid ),
-        .axi_wready_i    (m_axi4_li_cast[i].wready ),
+        .axi_wdata_o     (cache_axi4_lo[i].wdata  ),
+        .axi_wstrb_o     (cache_axi4_lo[i].wstrb  ),
+        .axi_wlast_o     (cache_axi4_lo[i].wlast  ),
+        .axi_wvalid_o    (cache_axi4_lo[i].wvalid ),
+        .axi_wready_i    (cache_axi4_li[i].wready ),
 
-        .axi_bid_i       (m_axi4_li_cast[i].bid    ),
-        .axi_bresp_i     (m_axi4_li_cast[i].bresp  ),
-        .axi_bvalid_i    (m_axi4_li_cast[i].bvalid ),
-        .axi_bready_o    (m_axi4_lo_cast[i].bready ),
+        .axi_bid_i       (cache_axi4_li[i].bid    ),
+        .axi_bresp_i     (cache_axi4_li[i].bresp  ),
+        .axi_bvalid_i    (cache_axi4_li[i].bvalid ),
+        .axi_bready_o    (cache_axi4_lo[i].bready ),
 
-        .axi_arid_o      (m_axi4_lo_cast[i].arid   ),
-        .axi_araddr_o    (m_axi4_lo_cast[i].araddr ),
-        .axi_arlen_o     (m_axi4_lo_cast[i].arlen  ),
-        .axi_arsize_o    (m_axi4_lo_cast[i].arsize ),
-        .axi_arburst_o   (m_axi4_lo_cast[i].arburst),
-        .axi_arcache_o   (m_axi4_lo_cast[i].arcache),
-        .axi_arprot_o    (m_axi4_lo_cast[i].arprot ),
-        .axi_arlock_o    (m_axi4_lo_cast[i].arlock ),
-        .axi_arvalid_o   (m_axi4_lo_cast[i].arvalid),
-        .axi_arready_i   (m_axi4_li_cast[i].arready),
+        .axi_arid_o      (cache_axi4_lo[i].arid   ),
+        .axi_araddr_o    (cache_axi4_lo[i].araddr ),
+        .axi_arlen_o     (cache_axi4_lo[i].arlen  ),
+        .axi_arsize_o    (cache_axi4_lo[i].arsize ),
+        .axi_arburst_o   (cache_axi4_lo[i].arburst),
+        .axi_arcache_o   (cache_axi4_lo[i].arcache),
+        .axi_arprot_o    (cache_axi4_lo[i].arprot ),
+        .axi_arlock_o    (cache_axi4_lo[i].arlock ),
+        .axi_arvalid_o   (cache_axi4_lo[i].arvalid),
+        .axi_arready_i   (cache_axi4_li[i].arready),
 
-        .axi_rid_i       (m_axi4_li_cast[i].rid    ),
-        .axi_rdata_i     (m_axi4_li_cast[i].rdata  ),
-        .axi_rresp_i     (m_axi4_li_cast[i].rresp  ),
-        .axi_rlast_i     (m_axi4_li_cast[i].rlast  ),
-        .axi_rvalid_i    (m_axi4_li_cast[i].rvalid ),
-        .axi_rready_o    (m_axi4_lo_cast[i].rready )
+        .axi_rid_i       (cache_axi4_li[i].rid    ),
+        .axi_rdata_i     (cache_axi4_li[i].rdata  ),
+        .axi_rresp_i     (cache_axi4_li[i].rresp  ),
+        .axi_rlast_i     (cache_axi4_li[i].rlast  ),
+        .axi_rvalid_i    (cache_axi4_li[i].rvalid ),
+        .axi_rready_o    (cache_axi4_lo[i].rready )
       );
 
-      assign m_axi4_lo_cast[i].awregion = 4'b0;
-      assign m_axi4_lo_cast[i].awqos    = 4'b0;
+      assign cache_axi4_lo[i].awregion = 4'b0;
+      assign cache_axi4_lo[i].awqos    = 4'b0;
 
-      assign m_axi4_lo_cast[i].arregion = 4'b0;
-      assign m_axi4_lo_cast[i].arqos    = 4'b0;
+      assign cache_axi4_lo[i].arregion = 4'b0;
+      assign cache_axi4_lo[i].arqos    = 4'b0;
     end
 
   end // block: lv2_axi4_x4

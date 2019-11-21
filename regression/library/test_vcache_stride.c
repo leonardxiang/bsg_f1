@@ -39,6 +39,7 @@
 #define STRIDE_SIZE SETS*BLOCK_SIZE
 #define DRAM_BASE 0x0000
 #define NUM_STRIDES (WAYS*2)
+#define NUM_DRAMS 16
 
 int test_vcache_stride() {
         int rc;
@@ -67,32 +68,38 @@ int test_vcache_stride() {
 
         /* To increase the number of DRAM banks tested, increase ndrams (must be
          * less than dim_x) and add the X coordinates to dim_x */
-        int dram = 0, ndrams = dim_x;
+        int dram = 0, ndrams = NUM_DRAMS;
         hb_mc_idx_t dram_coord_y = hb_mc_config_get_dram_y(config);
         hb_mc_idx_t dram_coord_x = -1;
         hb_mc_epa_t epa;
         hb_mc_npa_t npa;
         int xidx, stride;
-        uint32_t gold  [NUM_STRIDES] = {0};
-        uint32_t result[NUM_STRIDES] = {0};
+        uint32_t gold  [NUM_DRAMS][NUM_STRIDES] = {0};
+        uint32_t result[NUM_DRAMS][NUM_STRIDES] = {0};
         uint32_t val;
 
         hb_mc_request_packet_t req;
         hb_mc_response_packet_t res;
 
         for (dram = 0; dram < ndrams; ++dram){
-                dram_coord_x = dram;
-                bsg_pr_test_info("Testing DRAM/Cache Interface at (%d, %d).\n", dram_coord_x, dram_coord_y);
+            for (stride = 0; stride < NUM_STRIDES; ++stride) {
+                    gold[dram][stride] = rand();
+            }
+        }
 
-                for (stride = 0; stride < NUM_STRIDES; ++stride) {
-                        gold[stride] = rand();
-                }
+        for (dram = 0; dram < ndrams; ++dram){
+                dram_coord_x = dram;
+                bsg_pr_test_info("Testing DRAM/Cache Interface Write at (%d, %d).\n", dram_coord_x, dram_coord_y);
+
+                // for (stride = 0; stride < NUM_STRIDES; ++stride) {
+                //         gold[stride] = rand();
+                // }
 
                 for (stride = 0; stride < NUM_STRIDES; ++stride) {
                         epa = DRAM_BASE + stride * STRIDE_SIZE;
                         dest = hb_mc_coordinate(dram_coord_x, dram_coord_y);
                         npa = hb_mc_epa_to_npa(dest, epa);
-                        val = gold[stride];
+                        val = gold[dram][stride];
 
                         bsg_pr_test_info("%s -- Writing value %lu to 0x%x @ (%d, %d)\n",
                                         __func__, val, epa, dram_coord_x, dram_coord_y);
@@ -103,7 +110,10 @@ int test_vcache_stride() {
                         }
                         val = ~val;
                 }
-                // read
+        }
+        for (dram = 0; dram < ndrams; ++dram){
+                dram_coord_x = dram;
+                bsg_pr_test_info("Testing DRAM/Cache Interface Read at (%d, %d).\n", dram_coord_x, dram_coord_y);
                 for (stride = 0; stride < NUM_STRIDES; ++stride) {
                         epa = DRAM_BASE + stride * STRIDE_SIZE;
                         dest = hb_mc_coordinate(dram_coord_x, dram_coord_y);
@@ -115,12 +125,12 @@ int test_vcache_stride() {
                         }
                         bsg_pr_test_info("%s -- Read value %lu from 0x%x @ (%d, %d)\n",
                                         __func__, val, epa, dram_coord_x, dram_coord_y);
-                        result[stride] = val;
+                        result[dram][stride] = val;
                 }
                 for (stride = 0; stride < NUM_STRIDES; ++stride) {
-                        if(result[stride] != gold[stride]){
+                        if(result[dram][stride] != gold[dram][stride]){
                                 bsg_pr_test_err("%s -- Index %d: Result, %lu, did not match expected, %lu!\n",
-                                                __func__, stride, result[stride], gold[stride]);
+                                                __func__, stride, result[dram][stride], gold[dram][stride]);
                                 return HB_MC_FAIL;
                         }
                 }
