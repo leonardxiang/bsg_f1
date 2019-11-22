@@ -1,19 +1,19 @@
 // Copyright (c) 2019, University of Washington All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-// 
+//
 // Redistributions of source code must retain the above copyright notice, this list
 // of conditions and the following disclaimer.
-// 
+//
 // Redistributions in binary form must reproduce the above copyright notice, this
 // list of conditions and the following disclaimer in the documentation and/or
 // other materials provided with the distribution.
-// 
+//
 // Neither the name of the copyright holder nor the names of its contributors may
 // be used to endorse or promote products derived from this software without
 // specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -37,7 +37,7 @@
 #define HB_MC_MMIO_FIFO_RX_OCCUPANCY_OFFSET 0x1C
 #define HB_MC_MMIO_FIFO_RX_DATA_OFFSET 0x20
 #define HB_MC_MMIO_FIFO_RX_LENGTH_OFFSET 0x24
-#define HB_MC_MMIO_FIFO_ISR_OFFSET 0x0 
+#define HB_MC_MMIO_FIFO_ISR_OFFSET 0x0
 #define HB_MC_MMIO_FIFO_IER_OFFSET 0x4
 
 #define HB_MC_MMIO_FIFO_IXR_RFPE_BIT 19
@@ -66,7 +66,9 @@
 /* Hammerblade-Manycore ROM */
 #define HB_MC_MMIO_ROM_BASE 0x2000
 
-/* Flow control */ 
+#define HB_MC_MMIO_RESET_BASE 0x10000
+
+/* Flow control */
 #define HB_MC_MMIO_CREDITS_BASE 0x2100
 #define HB_MC_MMIO_MAX_CREDITS 16
 

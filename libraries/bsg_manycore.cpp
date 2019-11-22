@@ -1,19 +1,19 @@
 // Copyright (c) 2019, University of Washington All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-// 
+//
 // Redistributions of source code must retain the above copyright notice, this list
 // of conditions and the following disclaimer.
-// 
+//
 // Redistributions in binary form must reproduce the above copyright notice, this
 // list of conditions and the following disclaimer in the documentation and/or
 // other materials provided with the distribution.
-// 
+//
 // Neither the name of the copyright holder nor the names of its contributors may
 // be used to endorse or promote products derived from this software without
 // specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,6 +24,8 @@
 // ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// #define DEBUG
 
 #include <bsg_manycore.h>
 #include <bsg_manycore_fifo.h>
@@ -505,6 +507,77 @@ static void hb_mc_manycore_cleanup_fifos(hb_mc_manycore_t *mc)
         hb_mc_manycore_rx_fifo_drain(mc, HB_MC_FIFO_RX_RSP);
 }
 
+
+/**
+ * Reset the a manycore instance
+ * @param[in] mc    A manycore to initialize
+ * @param[in] name  A name to give this manycore instance (used for debugging)
+ * @param[in] id    ID which selects the physical hardware from which this manycore is configured
+ * @return HB_MC_FAIL if an error occured. HB_MC_SUCCESS otherwise.
+ */
+int  hb_mc_manycore_reset(hb_mc_manycore_t *mc, const char *name, hb_mc_manycore_id_t id)
+{
+        int r = HB_MC_FAIL, err;
+
+    // check if null
+    if (!mc || !name)
+        return HB_MC_INVALID;
+
+    // check if mc is already initialized
+    if (mc->name || mc->private_data)
+        return HB_MC_INITIALIZED_TWICE;
+
+    // copy name
+    mc->name = strdup(name);
+    if (!mc->name) {
+        bsg_pr_err("Failed to Reset %s: %m\n", name);
+        return r;
+    }
+
+   // initialize private data
+   if ((err = hb_mc_manycore_init_private_data(mc)) != HB_MC_SUCCESS)
+           goto cleanup;
+
+   // initialize manycore for MMIO
+   if ((err = hb_mc_manycore_init_mmio(mc, id)) != HB_MC_SUCCESS)
+           goto cleanup;
+
+   if (err = hb_mc_manycore_mmio_write32(mc, HB_MC_MMIO_RESET_BASE, 0x00000001) != HB_MC_SUCCESS) {
+           manycore_pr_err(mc, "%s: Failed to write to reset address.\n",  __func__);
+           goto cleanup;
+   }
+
+   // // read configuration
+   // if ((err = hb_mc_manycore_init_config(mc)) != HB_MC_SUCCESS)
+   //         goto cleanup;
+
+   // // initialize FIFOs
+   // if ((err = hb_mc_manycore_init_fifos(mc)) != HB_MC_SUCCESS)
+   //         goto cleanup;
+
+   // // initialize responders
+   // if ((err = hb_mc_responders_init(mc)))
+   //         goto cleanup;
+
+   // // enable dram
+   // if ((err = hb_mc_manycore_enable_dram(mc)) != HB_MC_SUCCESS)
+   //         goto cleanup;
+
+   r = HB_MC_SUCCESS;
+   goto done;
+
+    cleanup:
+           r = err;
+           hb_mc_manycore_cleanup_fifos(mc);
+           hb_mc_manycore_cleanup_mmio(mc);
+           hb_mc_manycore_cleanup_private_data(mc);
+           free((void*)mc->name);
+
+    done:
+           return r;
+}
+
+
 /**
  * Initialize a manycore instance
  * @param[in] mc    A manycore to initialize
@@ -521,8 +594,9 @@ int  hb_mc_manycore_init(hb_mc_manycore_t *mc, const char *name, hb_mc_manycore_
                 return HB_MC_INVALID;
 
         // check if mc is already initialized
-        if (mc->name || mc->private_data)
+        if (mc->name || mc->private_data) {
                 return HB_MC_INITIALIZED_TWICE;
+        }
 
         // copy name
         mc->name = strdup(name);
@@ -587,6 +661,8 @@ int hb_mc_manycore_exit(hb_mc_manycore_t *mc)
         hb_mc_manycore_cleanup_mmio(mc);
         hb_mc_manycore_cleanup_private_data(mc);
         free((void*)mc->name);
+        mc->private_data = nullptr;
+        mc->name = nullptr;
         return HB_MC_SUCCESS;
 }
 
