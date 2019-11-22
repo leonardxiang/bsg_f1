@@ -22,7 +22,8 @@ module mc_memory_hierarchy
   , parameter axi_id_width_p = "inv"
   , parameter axi_addr_width_p = "inv"
   , parameter axi_data_width_p = "inv"
-  , localparam ch_addr_width_lp = $clog2(((1 << 31)/num_axi4_p))
+  // inverse hashed
+  , parameter ihash_enable_p = 0
   , localparam link_sif_width_lp =
   `bsg_manycore_link_sif_width(addr_width_p,data_width_p,x_cord_width_p,y_cord_width_p,load_id_width_p)
   , localparam axi4_mosi_bus_width_lp =
@@ -67,18 +68,152 @@ module mc_memory_hierarchy
   assign m_axi4_bus_o = m_axi4_lo_cast;
   assign m_axi4_li_cast = m_axi4_bus_i;
 
-  for (genvar i = 0; i < num_axi4_p; i++) begin : mem_ch
-    always_comb begin
-      m_axi4_lo_cast[i] = cache_axi4_lo[i];
-      m_axi4_lo_cast[i].awaddr = cache_axi4_lo[i].awaddr | (i << ch_addr_width_lp);
-      m_axi4_lo_cast[i].araddr = cache_axi4_lo[i].araddr | (i << ch_addr_width_lp);
-      cache_axi4_li[i] = m_axi4_li_cast[i];
-    end
-  end : mem_ch
+  localparam dram_size_in_words_p=2**29;  // 2GB in total
 
-  localparam byte_offset_width_lp = `BSG_SAFE_CLOG2(data_width_p>>3)             ;
-  localparam cache_addr_width_lp  = (addr_width_p-1+byte_offset_width_lp)        ;
-  localparam dma_pkt_width_lp     = `bsg_cache_dma_pkt_width(cache_addr_width_lp);
+  // 1
+  localparam byte_offset_width_lp = `BSG_SAFE_CLOG2(data_width_p>>3);
+
+  // 2
+  localparam lg_block_size_in_words_lp = `BSG_SAFE_CLOG2(block_size_in_words_p)          ;
+  localparam axi_block_addr_offset_lp  = lg_block_size_in_words_lp + byte_offset_width_lp;
+  // 3
+  localparam block_number_width_lp=`BSG_SAFE_CLOG2(dram_size_in_words_p)-lg_block_size_in_words_lp;
+  localparam hash_bank_index_width_lp = $clog2((2**block_number_width_lp+num_cache_p-1)/num_cache_p);
+  // 4
+  localparam lg_caches_per_axi4_lp = `BSG_SAFE_CLOG2(caches_per_axi4_p);
+  // 5
+  localparam lg_num_axi4_lp = `BSG_SAFE_CLOG2(num_axi4_p);
+  localparam lg_num_cache_lp = $clog2(num_cache_p);
+
+  // cache address
+  localparam cache_addr_width_lp = (addr_width_p-1+byte_offset_width_lp)        ;
+  localparam dma_pkt_width_lp    = `bsg_cache_dma_pkt_width(cache_addr_width_lp);
+
+  for (genvar i = 0; i < num_axi4_p; i++) begin : mem_ch
+
+    logic [hash_bank_index_width_lp-1:0] wr_index;
+    logic [lg_num_cache_lp-1:0] wr_bank_index;
+    logic [block_number_width_lp-1:0] wr_block_num;
+
+    logic [hash_bank_index_width_lp-1:0] rd_index;
+    logic [lg_num_cache_lp-1:0] rd_bank_index;
+    logic [block_number_width_lp-1:0] rd_block_num;
+
+    // add msb(channel tags) to each axi address, such that for 16 columns design:
+    // 4 axi channels x 4 caches, cache has 64 sets, 16 words per block
+    // ORIGINAL ADDRESS
+    //        30:29|     28:27|      26:12|       11:6|        5:2|
+    // ------------------------------------------------------------
+    // |channel tag|cache bank|cacheln tag|block index|word offset|
+    // ------------------------------------------------------------
+    // HASHED ADDRESS
+    //        30:16|      15:10|       9:8|        7:6|        5:2|
+    // ------------------------------------------------------------
+    // |cacheln tag|block index|channel tag|cache bank|word offset|
+    // ------------------------------------------------------------
+
+
+    // e.g. cache has 64 sets, 16 words per block
+
+    // EVA ADDRESS
+    // ______________________________________________________________
+    // |      30:16|      15:10|         9:6|        5:2|        1:0|
+    // --------------------------------------------------------------
+    // |cacheln tag|block index|hbm channels|word offset|byte offset|
+    // --------------------------------------------------------------
+
+    // HASHED EPA ADDRESS, NPA
+    // ______________________________________________________________________
+    // |       30:27|      26:12|       11:6|        5:2|        1:0| x cord|
+    // --------------------------------------------------------------~~~~~~~~
+    // |zero padding|cacheln tag|block index|word offset|byte offset|hbm chs|
+    // --------------------------------------------------------------~~~~~~~~
+
+    // HBM AXI ADDRESS
+    // _________________________________________________________________
+    // |       31:28|27|      26:12|       11:6|        5:2|        1:0|
+    // -----------------------------------------------------------------
+    // |hbm channels| 0|cacheln tag|block index|word offset|byte offset|
+    // -----------------------------------------------------------------
+
+
+    always_comb begin
+
+      if (caches_per_axi4_p == 1) begin
+        wr_bank_index = lg_num_axi4_lp'(i);
+        rd_bank_index = lg_num_axi4_lp'(i);
+      end
+      else if (num_axi4_p == 1) begin
+        // Note: cache_to_axi module outputs in bank cache address using cache_addr_width_lp
+        wr_bank_index = cache_axi4_lo[i].awaddr[0][cache_addr_width_lp+:lg_num_cache_lp];
+        rd_bank_index = cache_axi4_lo[i].araddr[0][cache_addr_width_lp+:lg_num_cache_lp];
+      end
+      else begin
+        wr_bank_index = {
+          lg_num_axi4_lp'(i),
+          cache_axi4_lo[i].awaddr[0][cache_addr_width_lp+:lg_caches_per_axi4_lp]
+        };
+        rd_bank_index = {
+          lg_num_axi4_lp'(i),
+          cache_axi4_lo[i].araddr[0][cache_addr_width_lp+:lg_caches_per_axi4_lp]
+        };
+      end
+
+      wr_index = cache_axi4_lo[i].awaddr[0][axi_block_addr_offset_lp+:hash_bank_index_width_lp];
+      rd_index = cache_axi4_lo[i].araddr[0][axi_block_addr_offset_lp+:hash_bank_index_width_lp];
+
+    end
+
+    if (ihash_enable_p == 1) begin : inv_hs
+      // axi write address inverse hash
+      //
+      hash_function_reverse #(
+        .width_p(block_number_width_lp),
+        .banks_p(num_cache_p          )
+      ) hash_bank_wr (
+        .index_i(wr_index     ),
+        .bank_i (wr_bank_index),
+        .o      (wr_block_num )
+      );
+
+      // axi read address inverse hash
+      //
+      hash_function_reverse #(
+        .width_p(block_number_width_lp),
+        .banks_p(num_cache_p          )
+      ) hash_bank_rd (
+        .index_i(rd_index     ),
+        .bank_i (rd_bank_index),
+        .o      (rd_block_num )
+      );
+    end : inv_hs
+    else begin : mc_hash
+
+      assign wr_block_num = {wr_bank_index, wr_index};
+      assign rd_block_num = {rd_bank_index, rd_index};
+
+    end : mc_hash
+
+    always_comb begin
+      // axi4 fwd
+      m_axi4_lo_cast[i] = cache_axi4_lo[i];
+      // axi4 rcv
+      cache_axi4_li[i] = m_axi4_li_cast[i];
+
+      m_axi4_lo_cast[i].awaddr = {
+        {(axi_addr_width_p-block_number_width_lp-lg_block_size_in_words_lp-byte_offset_width_lp){1'b0}},
+        wr_block_num,
+        cache_axi4_lo[i].awaddr[0][0+:axi_block_addr_offset_lp]
+      };
+
+      m_axi4_lo_cast[i].araddr = {
+        {(axi_addr_width_p-block_number_width_lp-lg_block_size_in_words_lp-byte_offset_width_lp){1'b0}},
+        rd_block_num,
+        cache_axi4_lo[i].araddr[0][0+:axi_block_addr_offset_lp]
+      };
+    end
+
+  end : mem_ch
 
   logic [num_axi4_p-1:0][caches_per_axi4_p-1:0][dma_pkt_width_lp-1:0] cache_dma_pkt        ;
   logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                       cache_dma_pkt_v_lo   ;

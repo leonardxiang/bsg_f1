@@ -213,7 +213,8 @@ module mc_runner_top
     .caches_per_axi4_p(caches_per_axi4_lp),
     .axi_id_width_p   (axi_id_width_p    ),
     .axi_addr_width_p (axi_addr_width_p  ),
-    .axi_data_width_p (axi_data_width_p  )
+    .axi_data_width_p (axi_data_width_p  ),
+    .ihash_enable_p   (0)
   ) mem_sys (
     .clks_i      (clk_mem_i      ),
     .resets_i    (reset_mem_i    ),

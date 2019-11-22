@@ -119,6 +119,7 @@ VSOURCES += $(HARDWARE_PATH)/s_axil_mcl_adapter.v
 VSOURCES += $(HARDWARE_PATH)/axil_to_mem.sv
 
 VSOURCES += $(HARDWARE_MACHINE_PATH)/axi4_mux.v
+VSOURCES += $(HARDWARE_MACHINE_PATH)/axil_demux.v
 VSOURCES += $(HARDWARE_MACHINE_PATH)/bsg_bladerunner_configuration.v
 VSOURCES += $(HARDWARE_MACHINE_PATH)/axi4_clock_converter.v
 # VSOURCES += $(HARDWARE_MACHINE_PATH)/axi4_transpose_h2v.v

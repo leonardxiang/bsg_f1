@@ -1,19 +1,19 @@
 // Copyright (c) 2019, University of Washington All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-// 
+//
 // Redistributions of source code must retain the above copyright notice, this list
 // of conditions and the following disclaimer.
-// 
+//
 // Redistributions in binary form must reproduce the above copyright notice, this
 // list of conditions and the following disclaimer in the documentation and/or
 // other materials provided with the distribution.
-// 
+//
 // Neither the name of the copyright holder nor the names of its contributors may
 // be used to endorse or promote products derived from this software without
 // specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -49,6 +49,16 @@ int test_rom (int argc, char **argv) {
                 return rc;
         }
 
+
+        rc = hb_mc_manycore_reset(&mc, "manycore@reset", 0);
+        if(rc != HB_MC_SUCCESS){
+                bsg_pr_test_err("Failed to reset manycore device: %s\n",
+                                hb_mc_strerror(rc));
+                return HB_MC_FAIL;
+        } else
+            rc = hb_mc_manycore_exit(&mc);
+
+
         rc = hb_mc_manycore_init(&mc, "manycore@test_rom", 0);
         if(rc != HB_MC_SUCCESS){
                 bsg_pr_test_err("Failed to initialize manycore device: %s\n",
@@ -61,10 +71,16 @@ int test_rom (int argc, char **argv) {
         expected = 16;
         bsg_pr_test_info("Checking that the number of host credits is %d\n", expected);
         bsg_pr_test_info("(I know it's a magic number...)\n");
-        result = hb_mc_manycore_get_host_credits(&mc);
+        for (int i=0; i < 5; i++) {
+            result = hb_mc_manycore_get_host_credits(&mc);
+            if(result != expected){
+                    bsg_pr_test_err("Incorrect number of host credits. "
+                                    "Got: %d, expected %d\n", result, expected);
+            }
+            else
+                break;
+        }
         if(result != expected){
-                bsg_pr_test_err("Incorrect number of host credits. "
-                                "Got: %d, expected %d\n", result, expected);
                 bsg_pr_test_err("Have you programed your FPGA"
                                 " (fpga-load-local-image)\n");
                 fail = 1;

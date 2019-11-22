@@ -201,9 +201,9 @@ module cl_manycore
   // ---------------------------------------------
   // axil ocl interface
   // ---------------------------------------------
-  `declare_bsg_axil_bus_s(1, sh_ocl_si_s, sh_ocl_so_s);
-  sh_ocl_si_s s_axil_ocl_li;
-  sh_ocl_so_s s_axil_ocl_lo;
+  `declare_bsg_axil_bus_s(1, sh_axil_mosi_s, sh_axil_miso_s);
+  sh_axil_mosi_s s_axil_ocl_li;
+  sh_axil_miso_s s_axil_ocl_lo;
 
   assign s_axil_ocl_li.awaddr  = m_axil_ocl_awaddr;
   assign s_axil_ocl_li.awvalid = m_axil_ocl_awvalid;
@@ -224,6 +224,50 @@ module cl_manycore
   assign m_axil_ocl_rresp   = s_axil_ocl_lo.rresp;
   assign m_axil_ocl_rvalid  = s_axil_ocl_lo.rvalid;
 
+
+  // reserve the axil address space for soft reset
+  localparam num_axil_slot_lp = 2;
+  localparam soft_rst_base_addr_lp = 64'h10000;
+  localparam mc_mmio_base_addr_lp = 64'h00000;
+  localparam axil_base_addr_lp = {soft_rst_base_addr_lp, mc_mmio_base_addr_lp};
+
+  sh_axil_mosi_s s_mc_axil_li, s_rst_axil_li;
+  sh_axil_miso_s s_mc_axil_lo, s_rst_axil_lo;
+
+  axil_demux #(
+    .num_axil_p            (num_axil_slot_lp      ),
+    .axil_base_addr_p      (128'h00000000_00010000_00000000_00000000),
+    .axil_base_addr_width_p(16                    ),
+    .device_family         (`DEVICE_FAMILY        )
+  ) axil_dm (
+    .clk_i       (clk_main_a0                  ),
+    .reset_i     (~rst_main_n_sync             ),
+    .s_axil_ser_i(s_axil_ocl_li                ),
+    .s_axil_ser_o(s_axil_ocl_lo                ),
+    .m_axil_par_o({s_rst_axil_li, s_mc_axil_li}),
+    .m_axil_par_i({s_rst_axil_lo, s_mc_axil_lo})
+  );
+
+ // assign s_mc_axil_li = s_axil_ocl_li;
+ // assign s_axil_ocl_lo = s_mc_axil_lo;
+
+  logic reset_soft_lo;
+  axil_to_mem #(
+    .mem_addr_width_p      (4                         ),
+    .axil_base_addr_p      (32'(soft_rst_base_addr_lp)),
+    .axil_base_addr_width_p(16                        )
+  ) rst_probe (
+    .clk_i       (clk_main_a0     ),
+    .reset_i     (~rst_main_n_sync),
+    .s_axil_bus_i(s_rst_axil_li   ),
+    .s_axil_bus_o(s_rst_axil_lo   ),
+    .addr_o      (                ),
+    .wen_o       (                ),
+    .data_o      (                ),
+    .ren_o       (                ),
+    .data_i      (                ),
+    .done        (reset_soft_lo   )
+  );
 
   // manycore clock and reset
   //
@@ -272,7 +316,7 @@ module cl_manycore
 `endif
 
   // number of AXI4 master slots
-  localparam num_mc_axi4_lp = num_tiles_x_p;
+  localparam num_mc_axi4_lp = 16;
 
   // ---------------------------------------------
   // IO clocks
@@ -313,13 +357,13 @@ module cl_manycore
     .axi_data_width_p(axi_data_width_p)
   ) mc_top (
     .clk_core_i  (clk_mc_li      ),
-    .reset_core_i(reset_mc_li    ),
+    .reset_core_i(reset_mc_li|reset_soft_lo    ),
     .clk_io_i    (clk_io_li      ),
-    .reset_io_i  (reset_io_li    ),
+    .reset_io_i  (reset_io_li|reset_soft_lo    ),
     .clk_mem_i   (clk_mc_mem_li  ),
     .reset_mem_i (reset_mc_mem_li),
-    .s_axil_bus_i(s_axil_ocl_li  ),
-    .s_axil_bus_o(s_axil_ocl_lo  ),
+    .s_axil_bus_i(s_mc_axil_li   ),
+    .s_axil_bus_o(s_mc_axil_lo   ),
     .m_axi4_bus_o(m_mc_axi4_lo   ),
     .m_axi4_bus_i(m_mc_axi4_li   )
   );
@@ -367,21 +411,26 @@ module cl_manycore
   hbm_axi_si_buses_s s_hbm_axi_li;
   hbm_axi_so_buses_s s_hbm_axi_lo;
 
-  axi4_mux #(
-    .num_axi4_p   (num_mc_axi4_lp       ),
-    .id_width_p   (hbm_axi_id_width_lp  ),
-    .addr_width_p (hbm_axi_addr_width_lp),
-    .data_width_p (hbm_axi_data_width_lp),
-    .device_family(`DEVICE_FAMILY       )
-  ) mux (
-    .clk_i       (clk_hbm_ch1_li  ),
-    .reset_i     (reset_hbm_ch1_li),
-    .s_axi4_par_i(m_mc_axi4_async_lo ),
-    .s_axi4_par_o(m_mc_axi4_async_li ),
-    .m_axi4_ser_o(s_hbm_axi_li    ),
-    .m_axi4_ser_i(s_hbm_axi_lo    )
-  );
-
+  if (num_mc_axi4_lp == 1) begin
+    assign s_hbm_axi_li = m_mc_axi4_async_lo;
+    assign m_mc_axi4_async_li = s_hbm_axi_lo;
+  end
+  else begin
+    axi4_mux #(
+      .num_axi4_p   (num_mc_axi4_lp       ),
+      .id_width_p   (hbm_axi_id_width_lp  ),
+      .addr_width_p (hbm_axi_addr_width_lp),
+      .data_width_p (hbm_axi_data_width_lp),
+      .device_family(`DEVICE_FAMILY       )
+    ) mux (
+      .clk_i       (clk_hbm_ch1_li    ),
+      .reset_i     (reset_hbm_ch1_li  ),
+      .s_axi4_par_i(m_mc_axi4_async_lo),
+      .s_axi4_par_o(m_mc_axi4_async_li),
+      .m_axi4_ser_o(s_hbm_axi_li      ),
+      .m_axi4_ser_i(s_hbm_axi_lo      )
+    );
+  end
 
   // ===================================================
   // FAKE PORT FROM SHELL, to be replaced

@@ -1,8 +1,8 @@
 /*
  *  axil_to_mcl.v
- *  
+ *
  *  This module converts the AXIL memory-mapped interface to the manycore network interface.
- *  It also reads from the ROM in the AXIL addres space. 
+ *  It also reads from the ROM in the AXIL addres space.
  *  TODO: factor a single link out using basejump_stl.
  *          ______________     _______________                 __________
  *         | axi crossbar |==>|axi mcl adapter|--> fifo_o --> | manycore |
@@ -372,7 +372,7 @@ module axil_to_mcl
   bsg_mcl_request_s [num_mcl_p-1:0] mc_req_cast;
   bsg_mcl_response_s [num_mcl_p-1:0] fifo_res_cast;
   bsg_mcl_response_s [num_mcl_p-1:0] mc_res_cast;
- 
+
   // disable request to the manycore if:
   // 1. manycore endpoint out credits == 0
   // 2. host issues load request and the rcv fifo vacancy < max_out_credits_p (do not use 0 because of the network latency)
@@ -412,7 +412,7 @@ module axil_to_mcl
 
     // manycore request to fifo
     assign fifo_v_li[2*i+1]       = endpoint_in_v_lo[i];
-    assign endpoint_in_yumi_li[i] = fifo_ready_lo[2*i+1] & fifo_v_li[2*i+1]; // host need to check the rcv vacancy 
+    assign endpoint_in_yumi_li[i] = fifo_ready_lo[2*i+1] & fifo_v_li[2*i+1]; // host need to check the rcv vacancy
     assign fifo_data_li[2*i+1]    = mc_req_cast[i];
     assign mc_req_cast[i].padding = '0;
     assign mc_req_cast[i].addr = (32)'(endpoint_in_addr_lo[i]);
