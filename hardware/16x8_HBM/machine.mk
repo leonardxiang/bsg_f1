@@ -1,19 +1,19 @@
 # Copyright (c) 2019, University of Washington All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
-# 
+#
 # Redistributions of source code must retain the above copyright notice, this list
 # of conditions and the following disclaimer.
-# 
+#
 # Redistributions in binary form must reproduce the above copyright notice, this
 # list of conditions and the following disclaimer in the documentation and/or
 # other materials provided with the distribution.
-# 
+#
 # Neither the name of the copyright holder nor the names of its contributors may
 # be used to endorse or promote products derived from this software without
 # specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,6 +31,7 @@ BSG_MACHINE_VCACHE_SET                = 64
 BSG_MACHINE_VCACHE_WAY                = 8
 BSG_MACHINE_VCACHE_BLOCK_SIZE_WORDS   = 16
 BSG_MACHINE_VCACHE_STRIPE_SIZE_WORDS  = $(BSG_MACHINE_VCACHE_BLOCK_SIZE_WORDS)
+BSG_MACHINE_VCACHE_MISS_FIFO_ELS      = 32
 BSG_MACHINE_DRAM_INCLUDED             = 1
 BSG_MACHINE_MAX_EPA_WIDTH             = 28
 BSG_MACHINE_DRAM_SIZE_WORDS           = 536870912
@@ -41,7 +42,7 @@ BSG_MACHINE_DATA_WIDTH                = 32
 # This flag has to be always 0 by default. Conditional
 # assignment allows user to set this flag through
 # environment when required.
-BSG_MACHINE_BRANCH_TRACE_EN          ?= 0 
+BSG_MACHINE_BRANCH_TRACE_EN          ?= 0
 
 CL_MANYCORE_HOST_COORD_X             := 0
 CL_MANYCORE_HOST_COORD_Y             := 0

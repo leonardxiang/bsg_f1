@@ -117,15 +117,13 @@ VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/instr_trace.v
 VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/vanilla_core_trace.v
 VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/bsg_manycore_link_to_cache_tracer.v
 
+VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/bsg_manycore_profile_pkg.v
 VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/vanilla_core_profiler.v
 VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/vcache_profiler.v
+VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/vcache_non_blocking_profiler.v
 VSOURCES += $(BSG_MANYCORE_DIR)/testbenches/common/v/infinite_mem_profiler.v
 
 VSOURCES += $(BSG_MANYCORE_DIR)/v/bsg_manycore_link_sif_async_buffer.v
-
-VSOURCES += $(BASEJUMP_STL_DIR)/bsg_async/bsg_async_fifo.v
-VSOURCES += $(BASEJUMP_STL_DIR)/bsg_async/bsg_async_ptr_gray.v
-VSOURCES += $(BASEJUMP_STL_DIR)/bsg_async/bsg_launch_sync_sync.v
 
 
 # -------------------- TARGETS --------------------
@@ -153,6 +151,15 @@ include $(BSG_MACHINE_PATH)/Makefile.machine.include
 # (infinite) AXI memory model with low (1-2 cycle) latency in
 # simulation.
 ifeq ($(CL_MANYCORE_MEM_CFG),e_vcache_blocking_axi4_f1_model)
+VDEFINES   += AXI_MEMORY_MODEL=1
+VDEFINES   += ECC_DIRECT_EN
+VDEFINES   += RND_ECC_EN
+VDEFINES   += ECC_ADDR_LO=0
+VDEFINES   += ECC_ADDR_HI=0
+VDEFINES   += RND_ECC_WEIGHT=0
+endif
+
+ifeq ($(CL_MANYCORE_MEM_CFG),e_vcache_non_blocking_axi4_f1_model)
 VDEFINES   += AXI_MEMORY_MODEL=1
 VDEFINES   += ECC_DIRECT_EN
 VDEFINES   += RND_ECC_EN

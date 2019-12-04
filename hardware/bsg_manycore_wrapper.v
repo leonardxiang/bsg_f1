@@ -2,9 +2,8 @@
  *  bsg_manycore_wrapper.v
  */
 
-`include "bsg_manycore_packet.vh"
-
 module bsg_manycore_wrapper
+  import bsg_manycore_pkg::*;
   import bsg_noc_pkg::*;
   #(parameter addr_width_p="inv" // in words
     , parameter data_width_p="inv"
@@ -22,12 +21,12 @@ module bsg_manycore_wrapper
     , parameter vcache_block_size_in_words_p="inv"
     , parameter vcache_sets_p="inv"
     , parameter branch_trace_en_p="inv"
- 
+
     , parameter num_cache_p="inv"
 
     , parameter x_cord_width_lp=`BSG_SAFE_CLOG2(num_tiles_x_p)
     , parameter y_cord_width_lp=`BSG_SAFE_CLOG2(num_tiles_y_p+2)
-  
+
     , parameter link_sif_width_lp=
       `bsg_manycore_link_sif_width(addr_width_p,data_width_p,x_cord_width_lp,y_cord_width_lp,load_id_width_p)
   )
@@ -55,7 +54,7 @@ module bsg_manycore_wrapper
   bsg_manycore_link_sif_s [S:N][num_tiles_x_p-1:0] ver_link_sif_lo;
   bsg_manycore_link_sif_s [num_tiles_x_p-1:0] io_link_sif_li;
   bsg_manycore_link_sif_s [num_tiles_x_p-1:0] io_link_sif_lo;
-  
+
   bsg_manycore #(
     .dmem_size_p(dmem_size_p)
     ,.icache_entries_p(icache_entries_p)
@@ -87,7 +86,7 @@ module bsg_manycore_wrapper
 
     ,.ver_link_sif_i(ver_link_sif_li)
     ,.ver_link_sif_o(ver_link_sif_lo)
-    
+
     ,.io_link_sif_i(io_link_sif_li)
     ,.io_link_sif_o(io_link_sif_lo)
   );
@@ -116,7 +115,7 @@ module bsg_manycore_wrapper
     assign cache_x_o[i] = (x_cord_width_lp)'(i);
     assign cache_y_o[i] = (y_cord_width_lp)'(num_tiles_y_p+1);
   end
-  
+
 
   // tie-off
   //

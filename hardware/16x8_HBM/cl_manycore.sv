@@ -43,7 +43,6 @@ module cl_manycore
    logic rst_main_n_sync;
 
 `include "bsg_defines.v"
-`include "bsg_manycore_packet.vh"
 `include "cl_id_defines.vh"
 `include "cl_manycore_defines.vh"
 
@@ -604,6 +603,8 @@ module cl_manycore
      #(
        .x_cord_width_p(x_cord_width_p)
        ,.y_cord_width_p(y_cord_width_p)
+       ,.icache_tag_width_p(icache_tag_width_p)
+       ,.icache_entries_p(icache_entries_p)
        ,.data_width_p(data_width_p)
        ,.dmem_size_p(data_width_p)
        )

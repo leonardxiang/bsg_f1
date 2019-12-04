@@ -69,6 +69,7 @@ CL_MANYCORE_DATA_WIDTH               := $(BSG_MACHINE_DATA_WIDTH)
 CL_MANYCORE_VCACHE_WAYS              := $(BSG_MACHINE_VCACHE_WAY)
 CL_MANYCORE_VCACHE_SETS              := $(BSG_MACHINE_VCACHE_SET)
 CL_MANYCORE_VCACHE_BLOCK_SIZE_WORDS  := $(BSG_MACHINE_VCACHE_BLOCK_SIZE_WORDS)
+CL_MANYCORE_VCACHE_MISS_FIFO_ELS     := $(BSG_MACHINE_VCACHE_MISS_FIFO_ELS)
 CL_MANYCORE_VCACHE_STRIPE_SIZE_WORDS := $(BSG_MACHINE_VCACHE_STRIPE_SIZE_WORDS)
 CL_MANYCORE_BRANCH_TRACE_EN          := $(BSG_MACHINE_BRANCH_TRACE_EN)
 CL_MANYCORE_RELEASE_VERSION          ?= $(shell echo $(FPGA_IMAGE_VERSION) | sed 's/\([0-9]*\)\.\([0-9]*\).\([0-9]*\)/000\10\20\3/')
@@ -88,6 +89,8 @@ FPGA_IMAGE_VERSION     ?= 0.0.0
 # sim_filelist.mk. Each file adds to VSOURCES and VINCLUDES and depends on
 # BSG_MANYCORE_DIR
 include $(BSG_MANYCORE_DIR)/machines/arch_filelist.mk
+VSOURCES := $(filter-out ${BSG_MANYCORE_DIR}/v/vanilla_bean/bsg_cache_to_axi_hashed.v,$(VSOURCES))
+VSOURCES += $(BASEJUMP_STL_DIR)/bsg_cache/bsg_cache_to_axi.v
 
 # So that we can limit tool-specific to a few specific spots we use VDEFINES,
 # VINCLUDES, and VSOURCES to hold lists of macros, include directores, and
@@ -165,6 +168,7 @@ $(HARDWARE_MACHINE_PATH)/%.v: $(HARDWARE_MACHINE_PATH)/%.rom
 	@echo $(call dec2bin,$(CL_MANYCORE_VCACHE_SETS))       >> $@.temp
 	@echo $(call dec2bin,$(CL_MANYCORE_VCACHE_BLOCK_SIZE_WORDS))  >> $@.temp
 	@echo $(call dec2bin,$(CL_MANYCORE_VCACHE_STRIPE_SIZE_WORDS)) >> $@.temp
+	@echo $(call dec2bin,$(CL_MANYCORE_VCACHE_MISS_FIFO_ELS)) >> $@.temp
 	mv $@.temp $@
 
 # Each manycore design on has a set of parameters that define
@@ -181,6 +185,7 @@ $(HARDWARE_MACHINE_PATH)/%.v: $(HARDWARE_MACHINE_PATH)/%.rom
 	@echo "\`define CL_MANYCORE_VCACHE_WAYS $(CL_MANYCORE_VCACHE_WAYS)" >> $@
 	@echo "\`define CL_MANYCORE_VCACHE_BLOCK_SIZE_WORDS $(CL_MANYCORE_VCACHE_BLOCK_SIZE_WORDS)" >> $@
 	@echo "\`define CL_MANYCORE_VCACHE_STRIPE_SIZE_WORDS $(CL_MANYCORE_VCACHE_STRIPE_SIZE_WORDS)" >> $@
+	@echo "\`define CL_MANYCORE_VCACHE_MISS_FIFO_ELS $(CL_MANYCORE_VCACHE_MISS_FIFO_ELS)" >> $@
 	@echo "\`define CL_MANYCORE_MEM_CFG $(CL_MANYCORE_MEM_CFG)" >> $@
 	@echo "\`define CL_MANYCORE_BRANCH_TRACE_EN $(CL_MANYCORE_BRANCH_TRACE_EN)" >> $@
 	@echo "\`endif" >> $@

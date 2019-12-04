@@ -7,6 +7,7 @@
 `include "bsg_axi_bus_pkg.vh"
 
 module mc_runner_top
+  import bsg_manycore_pkg::*;
   import cl_manycore_pkg::*;
   import bsg_cache_pkg::*;
 #(
@@ -54,23 +55,24 @@ module mc_runner_top
   `declare_bsg_manycore_link_sif_s(addr_width_p, data_width_p, x_cord_width_p, y_cord_width_p, load_id_width_p);
 
   // -----------------------------------------------------------
-  bsg_manycore_link_sif_s [num_cache_p-1:0] cache_link_sif_li;
-  bsg_manycore_link_sif_s [num_cache_p-1:0] cache_link_sif_lo;
+  bsg_manycore_link_sif_s [num_tiles_x_p-1:0] cache_link_sif_li;
+  bsg_manycore_link_sif_s [num_tiles_x_p-1:0] cache_link_sif_lo;
 
-  // after cdc
-  bsg_manycore_link_sif_s [num_cache_p-1:0] mem_link_sif_li;
-  bsg_manycore_link_sif_s [num_cache_p-1:0] mem_link_sif_lo;
+  // link to mem after cdc
+  bsg_manycore_link_sif_s [num_tiles_x_p-1:0] mem_link_sif_li;
+  bsg_manycore_link_sif_s [num_tiles_x_p-1:0] mem_link_sif_lo;
 
 
   // -----------------------------------------------------------
   bsg_manycore_link_sif_s loader_link_sif_lo;
   bsg_manycore_link_sif_s loader_link_sif_li;
-  // after cdc
+
+  // link to io after cdc
   bsg_manycore_link_sif_s mcl_link_sif_li;
   bsg_manycore_link_sif_s mcl_link_sif_lo;
 
-  logic [num_cache_p-1:0][x_cord_width_p-1:0] cache_x_lo;
-  logic [num_cache_p-1:0][y_cord_width_p-1:0] cache_y_lo;
+  logic [num_tiles_x_p-1:0][x_cord_width_p-1:0] cache_x_lo;
+  logic [num_tiles_x_p-1:0][y_cord_width_p-1:0] cache_y_lo;
 
   // manycore wrapper
   //
@@ -85,11 +87,11 @@ module mc_runner_top
     ,.epa_byte_addr_width_p(epa_byte_addr_width_p)
     ,.dram_ch_addr_width_p(dram_ch_addr_width_p)
     ,.load_id_width_p(load_id_width_p)
-    ,.num_cache_p(num_cache_p)
     ,.vcache_size_p(vcache_size_p)
     ,.vcache_block_size_in_words_p(block_size_in_words_p)
     ,.vcache_sets_p(sets_p)
     ,.branch_trace_en_p(branch_trace_en_p)
+    ,.num_cache_p(num_tiles_x_p)
   ) manycore_wrapper (
     .clk_i(clk_core_i)
     ,.reset_i(reset_core_i)
@@ -136,7 +138,7 @@ module mc_runner_top
       .R_link_sif_o(io_async_link_sif_lo)
     );
 
-  end : mc_cdc_io
+  end  // mc_cdc_io
   else begin : mc_to_io
 
     assign mcl_link_sif_li   = loader_link_sif_lo;
@@ -144,12 +146,12 @@ module mc_runner_top
 
   end
 
-  localparam caches_per_axi4_lp = num_cache_p/num_axi4_p;
+  localparam caches_per_axi4_lp = num_tiles_x_p/num_axi4_p;
 
   //synopsys translate_off
   initial begin
-    assert(num_axi4_p * caches_per_axi4_lp == num_cache_p)
-      else $fatal(0, "[%m] num_cache_p must be multiple of  num_axi4_p!\n");
+    assert(num_axi4_p * caches_per_axi4_lp == num_tiles_x_p)
+      else $fatal(0, "[%m] num_tiles_x_p must be multiple of  num_axi4_p!\n");
   end
   //synopsys translate_on
 
@@ -157,10 +159,10 @@ module mc_runner_top
   //
   if (mc_to_mem_cdc_p == 1) begin : mc_cdc_mem
 
-    bsg_manycore_link_sif_s [num_cache_p-1:0] cache_async_link_sif_li;
-    bsg_manycore_link_sif_s [num_cache_p-1:0] cache_async_link_sif_lo;
+    bsg_manycore_link_sif_s [num_tiles_x_p-1:0] cache_async_link_sif_li;
+    bsg_manycore_link_sif_s [num_tiles_x_p-1:0] cache_async_link_sif_lo;
 
-    for (genvar i = 0; i < num_cache_p; i++) begin : io_async_buf
+    for (genvar i = 0; i < num_tiles_x_p; i++) begin : io_async_buf
 
       bsg_manycore_link_sif_async_buffer #(
         .addr_width_p   (addr_width_p    ),
@@ -208,31 +210,33 @@ module mc_runner_top
     .x_cord_width_p   (x_cord_width_p    ),
     .y_cord_width_p   (y_cord_width_p    ),
     .load_id_width_p  (load_id_width_p   ),
-    .num_cache_p      (num_cache_p       ),
     .num_axi4_p       (num_axi4_p        ),
+    .num_tiles_x_p    (num_tiles_x_p     ),
     .caches_per_axi4_p(caches_per_axi4_lp),
     .axi_id_width_p   (axi_id_width_p    ),
     .axi_addr_width_p (axi_addr_width_p  ),
     .axi_data_width_p (axi_data_width_p  ),
-    .ihash_enable_p   (0)
+    .ihash_enable_p   (0                 )
   ) mem_sys (
     .clks_i      (clk_mem_i      ),
     .resets_i    (reset_mem_i    ),
     .link_sif_i  (mem_link_sif_li),
     .link_sif_o  (mem_link_sif_lo),
+    .cache_x_li  (cache_x_lo     ),
+    .cache_y_li  (cache_y_lo     ),
     .m_axi4_bus_o(m_axi4_bus_o   ),
     .m_axi4_bus_i(m_axi4_bus_i   )
   );
 
   // manycore link old
 
- logic [x_cord_width_p-1:0] mcl_x_cord_lp = '0;
- logic [y_cord_width_p-1:0] mcl_y_cord_lp = '0;
+  logic [x_cord_width_p-1:0] mcl_x_cord_lp = '0;
+  logic [y_cord_width_p-1:0] mcl_y_cord_lp = '0;
 
- logic                      print_stat_v_lo;
- logic [data_width_p-1:0]   print_stat_tag_lo;
+  logic                      print_stat_v_lo;
+  logic [data_width_p-1:0]   print_stat_tag_lo;
 
-axil_to_mcl #(
+  axil_to_mcl #(
   .num_mcl_p        (1                ),
   .num_tiles_x_p    (num_tiles_x_p    ),
   .num_tiles_y_p    (num_tiles_y_p    ),
@@ -242,7 +246,7 @@ axil_to_mcl #(
   .y_cord_width_p   (y_cord_width_p   ),
   .load_id_width_p  (load_id_width_p  ),
   .max_out_credits_p(max_out_credits_p)
-) axil_to_mcl_inst (
+  ) axil_to_mcl_inst (
   .clk_i             (clk_io_i              ),
   .reset_i           (reset_io_i            ),
 
@@ -273,7 +277,7 @@ axil_to_mcl #(
 
   .print_stat_v_o    (print_stat_v_lo       ),
   .print_stat_tag_o  (print_stat_tag_lo     )
-);
+  );
 
 
 endmodule

@@ -7,6 +7,7 @@
 
 module mc_memory_hierarchy
   import cl_manycore_pkg::*;
+  import bsg_manycore_pkg::*;
   import bsg_bladerunner_mem_cfg_pkg::*;
 #(
   parameter data_width_p = "inv"
@@ -15,9 +16,8 @@ module mc_memory_hierarchy
   , parameter y_cord_width_p = "inv"
   , parameter load_id_width_p = "inv"
   // cache
-  , parameter num_cache_p = "inv"
   , parameter num_axi4_p = "inv"
-  , parameter caches_per_axi4_p = num_cache_p/num_axi4_p
+  , parameter num_tiles_x_p = "inv"
   // AXI4
   , parameter axi_id_width_p = "inv"
   , parameter axi_addr_width_p = "inv"
@@ -31,24 +31,30 @@ module mc_memory_hierarchy
   , localparam axi4_miso_bus_width_lp =
   `bsg_axi4_miso_bus_width(1, axi_id_width_p, axi_addr_width_p, axi_data_width_p)
 ) (
-  input  [ num_axi4_p-1:0]                             clks_i
-  ,input  [ num_axi4_p-1:0]                             resets_i
+  input  [   num_axi4_p-1:0]                             clks_i
+  ,input  [   num_axi4_p-1:0]                             resets_i
   // manycore side
-  ,input  [num_cache_p-1:0][     link_sif_width_lp-1:0] link_sif_i
-  ,output [num_cache_p-1:0][     link_sif_width_lp-1:0] link_sif_o
+  ,input  [num_tiles_x_p-1:0][     link_sif_width_lp-1:0] link_sif_i
+  ,output [num_tiles_x_p-1:0][     link_sif_width_lp-1:0] link_sif_o
+  ,input  [num_tiles_x_p-1:0][        x_cord_width_p-1:0] cache_x_li
+  ,input  [num_tiles_x_p-1:0][        y_cord_width_p-1:0] cache_y_li  // the signal here is only used for debugging
   // AXI Memory Mapped interface out
-  ,output [ num_axi4_p-1:0][axi4_mosi_bus_width_lp-1:0] m_axi4_bus_o
-  ,input  [ num_axi4_p-1:0][axi4_miso_bus_width_lp-1:0] m_axi4_bus_i
+  ,output [   num_axi4_p-1:0][axi4_mosi_bus_width_lp-1:0] m_axi4_bus_o
+  ,input  [   num_axi4_p-1:0][axi4_miso_bus_width_lp-1:0] m_axi4_bus_i
 );
 
+  // set default clock and reset, clocks for memory channels can be different though
+  //
+  wire clk_i = clks_i[0];
+  wire reset_i = resets_i[0];
 
   // -------------------------------------------------
   // manycore packet casting
   // -------------------------------------------------
   `declare_bsg_manycore_link_sif_s(addr_width_p, data_width_p, x_cord_width_p, y_cord_width_p, load_id_width_p);
 
-  bsg_manycore_link_sif_s [num_cache_p-1:0] cache_link_sif_li;
-  bsg_manycore_link_sif_s [num_cache_p-1:0] cache_link_sif_lo;
+  bsg_manycore_link_sif_s [num_tiles_x_p-1:0] cache_link_sif_li;
+  bsg_manycore_link_sif_s [num_tiles_x_p-1:0] cache_link_sif_lo;
 
   assign cache_link_sif_li = link_sif_i;
   assign link_sif_o = cache_link_sif_lo;
@@ -72,32 +78,30 @@ module mc_memory_hierarchy
 
   // 1
   localparam byte_offset_width_lp = `BSG_SAFE_CLOG2(data_width_p>>3);
-
   // 2
-  localparam lg_block_size_in_words_lp = `BSG_SAFE_CLOG2(block_size_in_words_p)          ;
-  localparam axi_block_addr_offset_lp  = lg_block_size_in_words_lp + byte_offset_width_lp;
+  localparam word_offset_width_lp = `BSG_SAFE_CLOG2(block_size_in_words_p);
   // 3
-  localparam block_number_width_lp=`BSG_SAFE_CLOG2(dram_size_in_words_p)-lg_block_size_in_words_lp;
-  localparam hash_bank_index_width_lp = $clog2((2**block_number_width_lp+num_cache_p-1)/num_cache_p);
-  // 4
-  localparam lg_caches_per_axi4_lp = `BSG_SAFE_CLOG2(caches_per_axi4_p);
-  // 5
-  localparam lg_num_axi4_lp = `BSG_SAFE_CLOG2(num_axi4_p);
-  localparam lg_num_cache_lp = $clog2(num_cache_p);
+  localparam block_index_width_lp  = `BSG_SAFE_CLOG2(dram_size_in_words_p)-word_offset_width_lp     ;
+  localparam hashed_index_width_lp = $clog2((2**block_index_width_lp+num_tiles_x_p-1)/num_tiles_x_p);
 
-  // cache address
-  localparam cache_addr_width_lp = (addr_width_p-1+byte_offset_width_lp)        ;
-  localparam dma_pkt_width_lp    = `bsg_cache_dma_pkt_width(cache_addr_width_lp);
+  // cache address, 28-1+2=9 (512MB)
+  localparam cache_axi_addr_width_lp = (addr_width_p-1+byte_offset_width_lp)            ;
+  localparam dma_pkt_width_lp        = `bsg_cache_dma_pkt_width(cache_axi_addr_width_lp);
+
+  // cache and axi parameters
+  localparam caches_per_axi_p = num_tiles_x_p/num_axi4_p;
+  // 5
+  localparam axi_chan_width_lp = `BSG_SAFE_CLOG2(num_axi4_p);
 
   for (genvar i = 0; i < num_axi4_p; i++) begin : mem_ch
 
-    logic [hash_bank_index_width_lp-1:0] wr_index;
-    logic [lg_num_cache_lp-1:0] wr_bank_index;
-    logic [block_number_width_lp-1:0] wr_block_num;
+    logic [         hashed_index_width_lp-1:0] wr_index_per_channel;
+    logic [`BSG_SAFE_CLOG2(num_tiles_x_p)-1:0] wr_channel_li       ;
+    logic [          block_index_width_lp-1:0] wr_block_index_lo   ;
 
-    logic [hash_bank_index_width_lp-1:0] rd_index;
-    logic [lg_num_cache_lp-1:0] rd_bank_index;
-    logic [block_number_width_lp-1:0] rd_block_num;
+    logic [         hashed_index_width_lp-1:0] rd_index_per_channel;
+    logic [`BSG_SAFE_CLOG2(num_tiles_x_p)-1:0] rd_channel_li       ;
+    logic [          block_index_width_lp-1:0] rd_block_index_lo   ;
 
     // add msb(channel tags) to each axi address, such that for 16 columns design:
     // 4 axi channels x 4 caches, cache has 64 sets, 16 words per block
@@ -111,7 +115,6 @@ module mc_memory_hierarchy
     // ------------------------------------------------------------
     // |cacheln tag|block index|channel tag|cache bank|word offset|
     // ------------------------------------------------------------
-
 
     // e.g. cache has 64 sets, 16 words per block
 
@@ -139,60 +142,58 @@ module mc_memory_hierarchy
 
     always_comb begin
 
-      if (caches_per_axi4_p == 1) begin
-        wr_bank_index = lg_num_axi4_lp'(i);
-        rd_bank_index = lg_num_axi4_lp'(i);
+      if (caches_per_axi_p == 1) begin
+        wr_channel_li = axi_chan_width_lp'(i);
+        rd_channel_li = axi_chan_width_lp'(i);
       end
       else if (num_axi4_p == 1) begin
-        // Note: cache_to_axi module outputs in bank cache address using cache_addr_width_lp
-        wr_bank_index = cache_axi4_lo[i].awaddr[0][cache_addr_width_lp+:lg_num_cache_lp];
-        rd_bank_index = cache_axi4_lo[i].araddr[0][cache_addr_width_lp+:lg_num_cache_lp];
+        // channel is num of tiles x
+        wr_channel_li = cache_axi4_lo[i].awaddr[0][cache_axi_addr_width_lp+:`BSG_SAFE_CLOG2(num_tiles_x_p)];
+        rd_channel_li = cache_axi4_lo[i].araddr[0][cache_axi_addr_width_lp+:`BSG_SAFE_CLOG2(num_tiles_x_p)];
       end
       else begin
-        wr_bank_index = {
-          lg_num_axi4_lp'(i),
-          cache_axi4_lo[i].awaddr[0][cache_addr_width_lp+:lg_caches_per_axi4_lp]
+        wr_channel_li = {
+          axi_chan_width_lp'(i),
+          cache_axi4_lo[i].awaddr[0][cache_axi_addr_width_lp+:`BSG_SAFE_CLOG2(caches_per_axi_p)]
         };
-        rd_bank_index = {
-          lg_num_axi4_lp'(i),
-          cache_axi4_lo[i].araddr[0][cache_addr_width_lp+:lg_caches_per_axi4_lp]
+        rd_channel_li = {
+          axi_chan_width_lp'(i),
+          cache_axi4_lo[i].araddr[0][cache_axi_addr_width_lp+:`BSG_SAFE_CLOG2(caches_per_axi_p)]
         };
       end
 
-      wr_index = cache_axi4_lo[i].awaddr[0][axi_block_addr_offset_lp+:hash_bank_index_width_lp];
-      rd_index = cache_axi4_lo[i].araddr[0][axi_block_addr_offset_lp+:hash_bank_index_width_lp];
+      wr_index_per_channel = cache_axi4_lo[i].awaddr[0][byte_offset_width_lp+word_offset_width_lp+:hashed_index_width_lp];
+      rd_index_per_channel = cache_axi4_lo[i].araddr[0][byte_offset_width_lp+word_offset_width_lp+:hashed_index_width_lp];
 
     end
 
     if (ihash_enable_p == 1) begin : inv_hs
-      // axi write address inverse hash
-      //
+      // axi write address inverse hashing
       hash_function_reverse #(
-        .width_p(block_number_width_lp),
-        .banks_p(num_cache_p          )
+        .width_p(block_index_width_lp),
+        .banks_p(num_tiles_x_p       )
       ) hash_bank_wr (
-        .index_i(wr_index     ),
-        .bank_i (wr_bank_index),
-        .o      (wr_block_num )
+        .index_i(wr_index_per_channel),
+        .bank_i (wr_channel_li       ),
+        .o      (wr_block_index_lo   )
       );
 
-      // axi read address inverse hash
-      //
+      // axi read address inverse hashing
       hash_function_reverse #(
-        .width_p(block_number_width_lp),
-        .banks_p(num_cache_p          )
+        .width_p(block_index_width_lp),
+        .banks_p(num_tiles_x_p       )
       ) hash_bank_rd (
-        .index_i(rd_index     ),
-        .bank_i (rd_bank_index),
-        .o      (rd_block_num )
+        .index_i(rd_index_per_channel),
+        .bank_i (rd_channel_li       ),
+        .o      (rd_block_index_lo   )
       );
-    end : inv_hs
-    else begin : mc_hash
+    end  // inv_hs
+    else begin : mc_hash_unchanged
 
-      assign wr_block_num = {wr_bank_index, wr_index};
-      assign rd_block_num = {rd_bank_index, rd_index};
+      assign wr_block_index_lo = {wr_channel_li, wr_index_per_channel};
+      assign rd_block_index_lo = {rd_channel_li, rd_index_per_channel};
 
-    end : mc_hash
+    end  // mc_hash
 
     always_comb begin
       // axi4 fwd
@@ -201,31 +202,42 @@ module mc_memory_hierarchy
       cache_axi4_li[i] = m_axi4_li_cast[i];
 
       m_axi4_lo_cast[i].awaddr = {
-        {(axi_addr_width_p-block_number_width_lp-lg_block_size_in_words_lp-byte_offset_width_lp){1'b0}},
-        wr_block_num,
-        cache_axi4_lo[i].awaddr[0][0+:axi_block_addr_offset_lp]
+        {(axi_addr_width_p-block_index_width_lp-word_offset_width_lp-byte_offset_width_lp){1'b0}},
+        wr_block_index_lo,
+        cache_axi4_lo[i].awaddr[0][0+:byte_offset_width_lp+word_offset_width_lp]
       };
 
       m_axi4_lo_cast[i].araddr = {
-        {(axi_addr_width_p-block_number_width_lp-lg_block_size_in_words_lp-byte_offset_width_lp){1'b0}},
-        rd_block_num,
-        cache_axi4_lo[i].araddr[0][0+:axi_block_addr_offset_lp]
+        {(axi_addr_width_p-block_index_width_lp-word_offset_width_lp-byte_offset_width_lp){1'b0}},
+        rd_block_index_lo,
+        cache_axi4_lo[i].araddr[0][0+:byte_offset_width_lp+word_offset_width_lp]
       };
     end
 
-  end : mem_ch
+  end  // mem_ch
 
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0][dma_pkt_width_lp-1:0] cache_dma_pkt        ;
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                       cache_dma_pkt_v_lo   ;
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                       cache_dma_pkt_yumi_li;
+  ////////////////////////////////
+  // Configurable Memory System //
+  ////////////////////////////////
 
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0][data_width_p-1:0] cache_dma_data_li      ;
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                   cache_dma_data_v_li    ;
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                   cache_dma_data_ready_lo;
+  if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram
+    || mem_cfg_p ==e_vcache_blocking_axi4_f1_model
+    || mem_cfg_p == e_vcache_non_blocking_axi4_f1_dram
+    || mem_cfg_p ==  e_vcache_non_blocking_axi4_f1_model) begin: lv1_dma
 
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0][data_width_p-1:0] cache_dma_data_lo     ;
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                   cache_dma_data_v_lo   ;
-  logic [num_axi4_p-1:0][caches_per_axi4_p-1:0]                   cache_dma_data_yumi_li;
+    logic [num_tiles_x_p-1:0][dma_pkt_width_lp-1:0] dma_pkt        ;
+    logic [num_tiles_x_p-1:0]                       dma_pkt_v_lo   ;
+    logic [num_tiles_x_p-1:0]                       dma_pkt_yumi_li;
+
+    logic [num_tiles_x_p-1:0][data_width_p-1:0] dma_data_li      ;
+    logic [num_tiles_x_p-1:0]                   dma_data_v_li    ;
+    logic [num_tiles_x_p-1:0]                   dma_data_ready_lo;
+
+    logic [num_tiles_x_p-1:0][data_width_p-1:0] dma_data_lo     ;
+    logic [num_tiles_x_p-1:0]                   dma_data_v_lo   ;
+    logic [num_tiles_x_p-1:0]                   dma_data_yumi_li;
+
+  end
 
   // =================================================
   // LEVEL 1
@@ -233,11 +245,8 @@ module mc_memory_hierarchy
 
   if (mem_cfg_p == e_infinite_mem) begin : lv1_inf
 
-    wire clk_i = clks_i;
-    wire reset_i = resets_i;
-
     // each column has a nonsynth infinite memory
-    for (genvar i = 0; i < num_cache_p; i++) begin
+    for (genvar i = 0; i < num_tiles_x_p; i++) begin
       bsg_nonsynth_mem_infinite #(
         .data_width_p(data_width_p)
         ,.addr_width_p(addr_width_p)
@@ -251,8 +260,8 @@ module mc_memory_hierarchy
         ,.link_sif_i(cache_link_sif_li[i])
         ,.link_sif_o(cache_link_sif_lo[i])
         // coordinates for memory system are determined by bsg_manycore_wrapper
-        ,.my_x_i(cache_x_lo[i])
-        ,.my_y_i(cache_y_lo[i])
+        ,.my_x_i(cache_x_li[i])
+        ,.my_y_i(cache_y_li[i])
       );
     end
 
@@ -271,21 +280,10 @@ module mc_memory_hierarchy
 
   end : lv1_inf
 
-  else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram || mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv1_vcache
+  else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
+           mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv1_vcache
 
-    logic [num_cache_p-1:0][dma_pkt_width_lp-1:0] dma_pkt        ;
-    logic [num_cache_p-1:0]                       dma_pkt_v_lo   ;
-    logic [num_cache_p-1:0]                       dma_pkt_yumi_li;
-
-    logic [num_cache_p-1:0][data_width_p-1:0] dma_data_li      ;
-    logic [num_cache_p-1:0]                   dma_data_v_li    ;
-    logic [num_cache_p-1:0]                   dma_data_ready_lo;
-
-    logic [num_cache_p-1:0][data_width_p-1:0] dma_data_lo     ;
-    logic [num_cache_p-1:0]                   dma_data_v_lo   ;
-    logic [num_cache_p-1:0]                   dma_data_yumi_li;
-
-    for (genvar i = 0; i < num_cache_p; i++) begin : vcache
+    for (genvar i = 0; i < num_tiles_x_p; i++) begin : vcache
       bsg_manycore_vcache_blocking #(
         .data_width_p(data_width_p)
         ,.addr_width_p(addr_width_p)
@@ -297,52 +295,116 @@ module mc_memory_hierarchy
         ,.y_cord_width_p(y_cord_width_p)
         ,.load_id_width_p(load_id_width_p)
       ) vcache (
-        .clk_i(clks_i[i/caches_per_axi4_p])
-        ,.reset_i(resets_i[i/caches_per_axi4_p])
+        .clk_i(clks_i[i/caches_per_axi_p])
+        ,.reset_i(resets_i[i/caches_per_axi_p])
         // memory systems link from bsg_manycore_wrapper
         ,.link_sif_i(cache_link_sif_li[i])
         ,.link_sif_o(cache_link_sif_lo[i])
         // coordinates for memory system are determined by bsg_manycore_wrapper
-        ,.my_x_i(cache_x_lo[i])
-        ,.my_y_i(cache_y_lo[i])
+        ,.my_x_i(cache_x_li[i])
+        ,.my_y_i(cache_y_li[i])
 
-        ,.dma_pkt_o(dma_pkt[i])
-        ,.dma_pkt_v_o(dma_pkt_v_lo[i])
-        ,.dma_pkt_yumi_i(dma_pkt_yumi_li[i])
+        ,.dma_pkt_o(lv1_dma.dma_pkt[i])
+        ,.dma_pkt_v_o(lv1_dma.dma_pkt_v_lo[i])
+        ,.dma_pkt_yumi_i(lv1_dma.dma_pkt_yumi_li[i])
 
-        ,.dma_data_i(dma_data_li[i])
-        ,.dma_data_v_i(dma_data_v_li[i])
-        ,.dma_data_ready_o(dma_data_ready_lo[i])
+        ,.dma_data_i(lv1_dma.dma_data_li[i])
+        ,.dma_data_v_i(lv1_dma.dma_data_v_li[i])
+        ,.dma_data_ready_o(lv1_dma.dma_data_ready_lo[i])
 
-        ,.dma_data_o(dma_data_lo[i])
-        ,.dma_data_v_o(dma_data_v_lo[i])
-        ,.dma_data_yumi_i(dma_data_yumi_li[i])
+        ,.dma_data_o(lv1_dma.dma_data_lo[i])
+        ,.dma_data_v_o(lv1_dma.dma_data_v_lo[i])
+        ,.dma_data_yumi_i(lv1_dma.dma_data_yumi_li[i])
       );
-    end : vcache
+    end //  vcache
 
-    assign cache_dma_pkt = dma_pkt;
-    assign cache_dma_pkt_v_lo = dma_pkt_v_lo;
-    assign dma_pkt_yumi_li = cache_dma_pkt_yumi_li;
-    assign dma_data_li = cache_dma_data_li;
-    assign dma_data_v_li = cache_dma_data_v_li;
-    assign cache_dma_data_ready_lo = dma_data_ready_lo;
-    assign cache_dma_data_lo = dma_data_lo;
-    assign cache_dma_data_v_lo = dma_data_v_lo;
-    assign dma_data_yumi_li = cache_dma_data_yumi_li;
-
-  `ifdef COSIM
+    // synopsys translate off
     bind bsg_cache vcache_profiler #(
       .data_width_p(data_width_p)
+      ,.addr_width_p(addr_width_p)
     ) vcache_prof (
       .*
       ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
       ,.print_stat_v_i($root.tb.card.fpga.CL.mc_top.print_stat_v_lo)
       ,.print_stat_tag_i($root.tb.card.fpga.CL.mc_top.print_stat_tag_lo)
     );
-  `endif
+    // synopsys translate on
 
-  end : lv1_vcache
 
+  end  // block lv1_vcache
+  else if (mem_cfg_p == e_vcache_non_blocking_axi4_f1_dram ||
+           mem_cfg_p == e_vcache_non_blocking_axi4_f1_model) begin : lv1_vcache_nb
+
+    for (genvar i = 0; i < num_tiles_x_p; i++) begin: vcache
+      bsg_manycore_vcache_non_blocking #(
+        .data_width_p(data_width_p)
+        ,.addr_width_p(addr_width_p)
+        ,.block_size_in_words_p(block_size_in_words_p)
+        ,.sets_p(sets_p)
+        ,.ways_p(ways_p)
+
+        ,.miss_fifo_els_p(miss_fifo_els_p)
+        ,.x_cord_width_p(x_cord_width_p)
+        ,.y_cord_width_p(y_cord_width_p)
+        ,.load_id_width_p(load_id_width_p)
+      ) vcache_nb (
+        .clk_i(clks_i[i/caches_per_axi_p])
+        ,.reset_i(resets_i[i/caches_per_axi_p])
+
+        ,.link_sif_i(cache_link_sif_lo[i])
+        ,.link_sif_o(cache_link_sif_li[i])
+
+        ,.dma_pkt_o(lv1_dma.dma_pkt[i])
+        ,.dma_pkt_v_o(lv1_dma.dma_pkt_v_lo[i])
+        ,.dma_pkt_yumi_i(lv1_dma.dma_pkt_yumi_li[i])
+
+        ,.dma_data_i(lv1_dma.dma_data_li[i])
+        ,.dma_data_v_i(lv1_dma.dma_data_v_li[i])
+        ,.dma_data_ready_o(lv1_dma.dma_data_ready_lo[i])
+
+        ,.dma_data_o(lv1_dma.dma_data_lo[i])
+        ,.dma_data_v_o(lv1_dma.dma_data_v_lo[i])
+        ,.dma_data_yumi_i(lv1_dma.dma_data_yumi_li[i])
+      );
+    end
+
+    // synopsys translate off
+    bind bsg_cache_non_blocking vcache_non_blocking_profiler #(
+      .data_width_p(data_width_p)
+      ,.addr_width_p(addr_width_p)
+      ,.sets_p(sets_p)
+      ,.ways_p(ways_p)
+      ,.id_width_p(id_width_p)
+      ,.block_size_in_words_p(block_size_in_words_p)
+    ) vcache_prof (
+      .clk_i(clk_i)
+      ,.reset_i(reset_i)
+
+      ,.tl_data_mem_pkt_i(tl_data_mem_pkt_lo)
+      ,.tl_data_mem_pkt_v_i(tl_data_mem_pkt_v_lo)
+      ,.tl_data_mem_pkt_ready_i(tl_data_mem_pkt_ready_li)
+
+      ,.mhu_idle_i(mhu_idle)
+
+      ,.mhu_data_mem_pkt_i(mhu_data_mem_pkt_lo)
+      ,.mhu_data_mem_pkt_v_i(mhu_data_mem_pkt_v_lo)
+      ,.mhu_data_mem_pkt_yumi_i(mhu_data_mem_pkt_yumi_li)
+
+      ,.miss_fifo_data_i(miss_fifo_data_li)
+      ,.miss_fifo_v_i(miss_fifo_v_li)
+      ,.miss_fifo_ready_i(miss_fifo_ready_lo)
+
+      ,.dma_pkt_i(dma_pkt_o)
+      ,.dma_pkt_v_i(dma_pkt_v_o)
+      ,.dma_pkt_yumi_i(dma_pkt_yumi_i)
+
+      ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
+      ,.print_stat_v_i($root.tb.card.fpga.CL.print_stat_v_lo)
+      ,.print_stat_tag_i($root.tb.card.fpga.CL.print_stat_tag_lo)
+    );
+    // synopsys translate on
+
+  end  // lv1_vcache_non_blocking
 
   // =================================================
   // LEVEL 2
@@ -353,10 +415,10 @@ module mc_memory_hierarchy
     for (genvar i = 0; i < num_axi4_p; i++) begin : cache_to_axi
 
       bsg_cache_to_axi #(
-        .addr_width_p         (cache_addr_width_lp  ),
+        .addr_width_p         (cache_axi_addr_width_lp  ),
         .block_size_in_words_p(block_size_in_words_p),
         .data_width_p         (data_width_p         ),
-        .num_cache_p          (caches_per_axi4_p    ),
+        .num_cache_p          (caches_per_axi_p    ),
 
         .axi_id_width_p       (axi_id_width_p       ),
         .axi_addr_width_p     (axi_addr_width_p     ),
@@ -366,17 +428,17 @@ module mc_memory_hierarchy
         .clk_i           (clks_i[i]                 ),
         .reset_i         (resets_i[i]               ),
 
-        .dma_pkt_i       (cache_dma_pkt[i]          ),
-        .dma_pkt_v_i     (cache_dma_pkt_v_lo[i]     ),
-        .dma_pkt_yumi_o  (cache_dma_pkt_yumi_li[i]  ),
+        .dma_pkt_i       (lv1_dma.dma_pkt[i]          ),
+        .dma_pkt_v_i     (lv1_dma.dma_pkt_v_lo[i]     ),
+        .dma_pkt_yumi_o  (lv1_dma.dma_pkt_yumi_li[i]  ),
 
-        .dma_data_o      (cache_dma_data_li[i]      ),
-        .dma_data_v_o    (cache_dma_data_v_li[i]    ),
-        .dma_data_ready_i(cache_dma_data_ready_lo[i]),
+        .dma_data_o      (lv1_dma.dma_data_li[i]      ),
+        .dma_data_v_o    (lv1_dma.dma_data_v_li[i]    ),
+        .dma_data_ready_i(lv1_dma.dma_data_ready_lo[i]),
 
-        .dma_data_i      (cache_dma_data_lo[i]      ),
-        .dma_data_v_i    (cache_dma_data_v_lo[i]    ),
-        .dma_data_yumi_o (cache_dma_data_yumi_li[i] ),
+        .dma_data_i      (lv1_dma.dma_data_lo[i]      ),
+        .dma_data_v_i    (lv1_dma.dma_data_v_lo[i]    ),
+        .dma_data_yumi_o (lv1_dma.dma_data_yumi_li[i] ),
 
         .axi_awid_o      (cache_axi4_lo[i].awid   ),
         .axi_awaddr_o    (cache_axi4_lo[i].awaddr ),
