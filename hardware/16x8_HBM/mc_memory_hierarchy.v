@@ -223,7 +223,9 @@ module mc_memory_hierarchy
   if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram
     || mem_cfg_p ==e_vcache_blocking_axi4_f1_model
     || mem_cfg_p == e_vcache_non_blocking_axi4_f1_dram
-    || mem_cfg_p ==  e_vcache_non_blocking_axi4_f1_model) begin: lv1_dma
+    || mem_cfg_p ==  e_vcache_non_blocking_axi4_f1_model
+    || mem_cfg_p == e_vcache_blocking_axi4_hbm
+    || mem_cfg_p == e_vcache_non_blocking_axi4_hbm) begin: lv1_dma
 
     logic [num_tiles_x_p-1:0][dma_pkt_width_lp-1:0] dma_pkt        ;
     logic [num_tiles_x_p-1:0]                       dma_pkt_v_lo   ;
@@ -281,7 +283,8 @@ module mc_memory_hierarchy
   end : lv1_inf
 
   else if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
-           mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv1_vcache
+           mem_cfg_p == e_vcache_blocking_axi4_f1_model ||
+           mem_cfg_p == e_vcache_blocking_axi4_hbm) begin : lv1_vcache
 
     for (genvar i = 0; i < num_tiles_x_p; i++) begin : vcache
       bsg_manycore_vcache_blocking #(
@@ -333,7 +336,8 @@ module mc_memory_hierarchy
 
   end  // block lv1_vcache
   else if (mem_cfg_p == e_vcache_non_blocking_axi4_f1_dram ||
-           mem_cfg_p == e_vcache_non_blocking_axi4_f1_model) begin : lv1_vcache_nb
+           mem_cfg_p == e_vcache_non_blocking_axi4_f1_model ||
+           mem_cfg_p == e_vcache_non_blocking_axi4_hbm) begin : lv1_vcache_nb
 
     for (genvar i = 0; i < num_tiles_x_p; i++) begin: vcache
       bsg_manycore_vcache_non_blocking #(
@@ -351,8 +355,8 @@ module mc_memory_hierarchy
         .clk_i(clks_i[i/caches_per_axi_p])
         ,.reset_i(resets_i[i/caches_per_axi_p])
 
-        ,.link_sif_i(cache_link_sif_lo[i])
-        ,.link_sif_o(cache_link_sif_li[i])
+        ,.link_sif_i(cache_link_sif_li[i])
+        ,.link_sif_o(cache_link_sif_lo[i])
 
         ,.dma_pkt_o(lv1_dma.dma_pkt[i])
         ,.dma_pkt_v_o(lv1_dma.dma_pkt_v_lo[i])
@@ -399,8 +403,8 @@ module mc_memory_hierarchy
       ,.dma_pkt_yumi_i(dma_pkt_yumi_i)
 
       ,.global_ctr_i($root.tb.card.fpga.CL.global_ctr)
-      ,.print_stat_v_i($root.tb.card.fpga.CL.print_stat_v_lo)
-      ,.print_stat_tag_i($root.tb.card.fpga.CL.print_stat_tag_lo)
+      ,.print_stat_v_i($root.tb.card.fpga.CL.mc_top.print_stat_v_lo)
+      ,.print_stat_tag_i($root.tb.card.fpga.CL.mc_top.print_stat_tag_lo)
     );
     // synopsys translate on
 
@@ -410,7 +414,12 @@ module mc_memory_hierarchy
   // LEVEL 2
   // =================================================
 
-  if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram || mem_cfg_p == e_vcache_blocking_axi4_f1_model) begin : lv2_4_axi4
+  if (mem_cfg_p == e_vcache_blocking_axi4_f1_dram ||
+      mem_cfg_p == e_vcache_blocking_axi4_f1_model ||
+      mem_cfg_p == e_vcache_non_blocking_axi4_f1_dram ||
+      mem_cfg_p == e_vcache_non_blocking_axi4_f1_model ||
+      mem_cfg_p == e_vcache_blocking_axi4_hbm ||
+      mem_cfg_p == e_vcache_non_blocking_axi4_hbm) begin : lv2_4_axi4
 
     for (genvar i = 0; i < num_axi4_p; i++) begin : cache_to_axi
 

@@ -48,7 +48,7 @@ module axil_demux #(
   bsg_axil_mo_buses_s m_axil_lo_cast;
   bsg_axil_mi_buses_s m_axil_li_cast;
 
-  for (genvar i=0; i<num_axil_p; i=i+1) begin
+  for (genvar i=0; i<num_axil_p; i=i+1) begin : axil_trans
     always_comb begin: axil_bus_assignment
       m_axil_par_lo_cast[i] = {
         m_axil_lo_cast.awaddr[32*i+:32]

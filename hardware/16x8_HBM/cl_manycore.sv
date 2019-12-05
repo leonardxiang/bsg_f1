@@ -225,6 +225,7 @@ module cl_manycore
 
 
   // reserve the axil address space for soft reset
+  //
   localparam num_axil_slot_lp = 2;
   localparam soft_rst_base_addr_lp = 64'h10000;
   localparam mc_mmio_base_addr_lp = 64'h00000;
@@ -410,11 +411,11 @@ module cl_manycore
   hbm_axi_si_buses_s s_hbm_axi_li;
   hbm_axi_so_buses_s s_hbm_axi_lo;
 
-  if (num_mc_axi4_lp == 1) begin
+  if (num_mc_axi4_lp == 1) begin : one_axi4
     assign s_hbm_axi_li = m_mc_axi4_async_lo;
     assign m_mc_axi4_async_li = s_hbm_axi_lo;
   end
-  else begin
+  else begin : mahy_axi4
     axi4_mux #(
       .num_axi4_p   (num_mc_axi4_lp       ),
       .id_width_p   (hbm_axi_id_width_lp  ),

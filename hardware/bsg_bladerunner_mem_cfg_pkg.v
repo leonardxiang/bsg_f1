@@ -59,6 +59,18 @@ package bsg_bladerunner_mem_cfg_pkg;
     , e_vcache_non_blocking_axi4_f1_dram
     , e_vcache_non_blocking_axi4_f1_model
 
+    // use crossbar to group serval axi4 interfaces from mc, and access the dram
+    , e_vcache_blocking_axi4_xbar_dram
+    , e_vcache_blocking_axi4_xbar_model
+
+    // use bram as the lv3 memory
+    , e_vcache_blocking_axi4_bram
+    , e_vcache_non_blocking_axi4_bram
+
+    // use hbm as the lv3 memory
+    , e_vcache_blocking_axi4_hbm
+    , e_vcache_non_blocking_axi4_hbm
+
   } bsg_bladerunner_mem_cfg_e;
 
 endpackage
