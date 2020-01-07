@@ -71,13 +71,13 @@ int test_manycore_vcache_sequence() {
                                  __func__, dram_coord_x, dram_coord_y);
                 
                 for (size_t i = 0; i < ARRAY_LEN; i++) {
-                        if ((i % 64) == 1)
+                        if ((i % 64) == 0)
                                 bsg_pr_test_info("%s: Have written and read back %4zu words\n",
                                                  __func__, i);
                         
                         hb_mc_npa_t npa = hb_mc_npa_from_x_y(dram_coord_x,
                                                              dram_coord_y,
-                                                             BASE_ADDR+i);
+                                                             BASE_ADDR+i*sizeof(write_data));
                         write_data = rand();
                         err = hb_mc_manycore_write_mem(mc, &npa, &write_data, sizeof(write_data));
                         if (err != HB_MC_SUCCESS) {
