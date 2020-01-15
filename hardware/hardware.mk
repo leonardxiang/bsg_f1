@@ -1,19 +1,19 @@
 # Copyright (c) 2019, University of Washington All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
-# 
+#
 # Redistributions of source code must retain the above copyright notice, this list
 # of conditions and the following disclaimer.
-# 
+#
 # Redistributions in binary form must reproduce the above copyright notice, this
 # list of conditions and the following disclaimer in the documentation and/or
 # other materials provided with the distribution.
-# 
+#
 # Neither the name of the copyright holder nor the names of its contributors may
 # be used to endorse or promote products derived from this software without
 # specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -110,6 +110,11 @@ VHEADERS += $(HARDWARE_PATH)/bsg_axi_bus_pkg.vh
 VHEADERS += $(HARDWARE_PATH)/bsg_bladerunner_rom_pkg.vh
 VHEADERS += $(HARDWARE_PATH)/cl_manycore_defines.vh
 VHEADERS += $(HARDWARE_PATH)/cl_id_defines.vh
+
+# should overwrite the CL_TOP_MODULE and files
+include $(QCL_REPO_DIR)/environment.mk
+include $(HARDWARE_PATH)/../machines/qmc_runner/hardware.mk
+include $(QCL_DESIGN_PATH)/$(DESIGN_NAME)/hw.mk
 
 # The following functions convert a decimal string to a binary string,
 # and a hexadecimal string (WITHOUT the preceeding 0x) into binary

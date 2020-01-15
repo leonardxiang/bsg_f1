@@ -25,24 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-`ifndef CL_DEFINES
-`define CL_DEFINES
+#ifndef __QMC_TESTS_H
+#define __QMC_TESTS_H
 
-//Put module name of the CL design here.  This is used to instantiate in top.sv
-`define CL_NAME qmc_runner
+#include <bsg_manycore_loader.h>
+#include <bsg_manycore_errno.h>
+#include <bsg_manycore_printing.h>
 
-//Highly recommeneded.  For lib FIFO block, uses less async reset (take advantage of
-// FPGA flop init capability).  This will help with routing resources.
-`define FPGA_LESS_RST
+#include "../cl_manycore_regression.h"
 
-`define _bsg_data_end_addr 32
-
-// Uncomment to disable Virtual JTAG
-//`define DISABLE_VJTAG_DEBUG
-
-// Define macros for the manycore hardware
-`define axi4_to_sh_ddr_num 2
-
-
-`endif
-
+#endif // __QMC_TESTS_H

@@ -25,14 +25,5 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# set PART xcvu9p-flgb2104-2-i
-set PART xc7k325tffg900-2
-# HBM: xcvu37p-fsvh2892-3-e-es1
-
-set PROJ_NAME ipgen
-set SIMLIB_DIR vcs_simlibs
-
-# compile_simlib -simulator vcs -family virtexuplus \
-
-compile_simlib -simulator vcs -family kintex7 \
-    -language all -library all -dir [exec pwd]/$SIMLIB_DIR
+# This Makefile fragment defines rules for building RISC-V binaries
+# associated with the tests in this sub-directory
