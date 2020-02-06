@@ -34,7 +34,7 @@
 
 # This file REQUIRES several variables to be set. They are typically
 # set by the Makefile that includes this makefile..
-# 
+#
 # : The path to the Makefile.machine.include that defines Machine parameters
 ifndef BSG_MACHINE_PATH
 $(error $(shell echo -e "$(RED)BSG MAKE ERROR: BSG_MACHINE_PATH is not defined$(NC)"))
@@ -113,8 +113,7 @@ VHEADERS += $(HARDWARE_PATH)/cl_id_defines.vh
 
 # should overwrite the CL_TOP_MODULE and files
 include $(QCL_REPO_DIR)/environment.mk
-include $(HARDWARE_PATH)/../machines/qmc_runner/hardware.mk
-include $(QCL_DESIGN_PATH)/$(DESIGN_NAME)/hw.mk
+include $(QCL_DESIGN_PATH)/$(QCL_DESIGN_NAME)/hw.mk
 
 # The following functions convert a decimal string to a binary string,
 # and a hexadecimal string (WITHOUT the preceeding 0x) into binary
